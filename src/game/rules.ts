@@ -10,6 +10,21 @@ export interface MatchResult {
   remainingOnFloor: CardDef[];
 }
 
+export function validateMatchResult(result: MatchResult): void {
+  if (result.type === 'none' && result.captured.length !== 0) {
+    throw new Error('A non-matching play cannot capture cards');
+  }
+  if (result.type === 'choice' && result.captured.length !== 0) {
+    throw new Error('A pending choice cannot capture cards');
+  }
+  if (result.type === 'single' && result.captured.length !== 2) {
+    throw new Error(`A single match must capture 2 cards, got ${result.captured.length}`);
+  }
+  if (result.type === 'triple' && result.captured.length < 4) {
+    throw new Error(`A triple match must capture at least 4 cards, got ${result.captured.length}`);
+  }
+}
+
 /** The first two digits of the card id are the authoritative month family. */
 export function getCardFamily(card: CardDef): number {
   return Number.parseInt(card.id.slice(0, 2), 10);
@@ -28,52 +43,62 @@ export function evaluateCardMatch(
   const matches = findFloorMatches(playedCard, floorCards);
 
   if (matches.length === 0) {
-    return {
+    const result: MatchResult = {
       type: 'none',
       playedCard,
       captured: [],
       remainingOnFloor: [...floorCards, playedCard],
     };
+    validateMatchResult(result);
+    return result;
   }
 
   if (matches.length === 1) {
     const matched = matches[0];
-    return {
+    const result: MatchResult = {
       type: 'single',
       playedCard,
       captured: [playedCard, matched],
       remainingOnFloor: floorCards.filter((c) => c.id !== matched.id),
     };
+    validateMatchResult(result);
+    return result;
   }
 
   if (matches.length === 2) {
     // If choice was made, capture that chosen card
     if (chosenCandidate && matches.some((card) => card.id === chosenCandidate.id)) {
-      return {
+      const result: MatchResult = {
         type: 'single',
         playedCard,
         captured: [playedCard, chosenCandidate],
         remainingOnFloor: floorCards.filter((c) => c.id !== chosenCandidate.id),
       };
+      validateMatchResult(result);
+      return result;
     }
 
     // Otherwise require choice
-    return {
+    const result: MatchResult = {
       type: 'choice',
       playedCard,
       captured: [],
       candidates: matches,
       remainingOnFloor: floorCards,
     };
+    validateMatchResult(result);
+    return result;
   }
 
   // 3 matches on floor: capture all 4!
-  return {
+  const result: MatchResult = {
     type: 'triple',
     playedCard,
     captured: [playedCard, ...matches],
     remainingOnFloor: floorCards.filter((c) => !matches.some((m) => m.id === c.id)),
   };
+  validateMatchResult(result);
+  return result;
 }
 
 /** Basic Go-Stop scoring for the cards captured in a round. */

@@ -1,6 +1,6 @@
 import { CardDef } from './types';
 import { GameState } from './GameState';
-import { evaluateCardMatch, findFloorMatches } from './rules';
+import { evaluateCardMatch, findFloorMatches, MatchResult, validateMatchResult } from './rules';
 import { CpuAI } from './cpu';
 import { EventBus } from './EventBus';
 import { CardMesh } from '../three/CardMesh';
@@ -291,8 +291,9 @@ export class Game {
 
   private async applyMatchResult(
     playerId: 'player' | 'cpu',
-    match: { type: string; playedCard: CardDef; captured: CardDef[]; remainingOnFloor: CardDef[] }
+    match: MatchResult
   ): Promise<void> {
+    validateMatchResult(match);
     this.gameState.floorCards = match.remainingOnFloor;
 
     if (match.captured.length > 0) {

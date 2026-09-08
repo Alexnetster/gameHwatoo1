@@ -45,13 +45,13 @@ export class GameState {
   public pendingChoiceCandidates: CardDef[] = [];
   public turnCapturedCards: CardDef[] = []; // Cards captured in the current turn
 
-  public initNewGame(): {
+  public initNewGame(random: () => number = Math.random): {
     playerHand: CardDef[];
     cpuHand: CardDef[];
     floor: CardDef[];
     deck: CardDef[];
   } {
-    const fullDeck = createShuffledDeck();
+    const fullDeck = createShuffledDeck(random);
 
     // Matgo standard deal:
     // Player: 10 cards
