@@ -1,6 +1,6 @@
 import { CardDef } from './types';
 import { GameState } from './GameState';
-import { evaluateCardMatch, findFloorMatches, MatchResult, validateMatchResult } from './rules';
+import { evaluateCardMatch, findFloorMatches, MatchResult, validateMatchResult, isSeolsa } from './rules';
 import { CpuAI } from './cpu';
 import { EventBus } from './EventBus';
 import { CardMesh } from '../three/CardMesh';
@@ -213,17 +213,15 @@ export class Game {
       }
     }
 
-    // Apply hand match result
-    await this.applyMatchResult(playerId, handMatch);
-
-    // 3. Step 2: Draw card from Deck
-    await this.executeDeckDraw(playerId);
+    // Defer a single hand match until the deck card is revealed so Seolsa can be detected.
+    await this.executeDeckDraw(playerId, handMatch);
   }
 
-  private async executeDeckDraw(playerId: 'player' | 'cpu', chosenCandidate?: CardDef): Promise<void> {
+  private async executeDeckDraw(playerId: 'player' | 'cpu', handMatch: MatchResult, chosenCandidate?: CardDef): Promise<void> {
     this.gameState.phase = playerId === 'player' ? 'PLAYER_DRAW' : 'CPU_TURN';
     const deckCard = this.gameState.drawCardFromDeck();
     if (!deckCard) {
+      await this.applyMatchResult(playerId, handMatch);
       await this.finishTurn();
       return;
     }
@@ -237,6 +235,14 @@ export class Game {
     this.eventBus.emit('STATUS_MESSAGE', `더미에서 [${deckCard.name}] 카드를 뒤집었습니다.`);
     // Keep the revealed card visible long enough for the player to read it.
     await this.delay(650);
+
+    if (isSeolsa(handMatch, deckCard, this.gameState.specialRuleOptions)) {
+      await this.applySeolsa(playerId, handMatch.playedCard, deckCard);
+      await this.finishTurn();
+      return;
+    }
+
+    await this.applyMatchResult(playerId, handMatch);
 
     let deckMatch = evaluateCardMatch(deckCard, this.gameState.floorCards, chosenCandidate);
 
@@ -273,10 +279,9 @@ export class Game {
       this.gameState.pendingChoiceCandidates = [];
 
       const handMatch = evaluateCardMatch(handCard, this.gameState.floorCards, chosenCandidate);
-      await this.applyMatchResult('player', handMatch);
 
       // Continue to deck draw
-      await this.executeDeckDraw('player');
+      await this.executeDeckDraw('player', handMatch);
     } else if (this.gameState.phase === 'PLAYER_DRAW_CHOICE') {
       const deckCard = this.gameState.pendingDrawCard!;
       this.gameState.pendingDrawCard = null;
@@ -287,6 +292,25 @@ export class Game {
 
       await this.finishTurn();
     }
+  }
+
+  private async applySeolsa(playerId: 'player' | 'cpu', handCard: CardDef, deckCard: CardDef): Promise<void> {
+    this.gameState.floorCards = [...this.gameState.floorCards, handCard, deckCard];
+    const opponentId = playerId === 'player' ? 'cpu' : 'player';
+    const transferred = this.gameState.transferPi(
+      opponentId,
+      playerId,
+      this.gameState.specialRuleOptions.seolsaPiReward,
+    );
+    const playerName = playerId === 'player' ? '플레이어' : '상대방';
+    const reward = transferred.length > 0 ? ` 피 ${transferred.length}장 회수` : '';
+    this.eventBus.emit('STATUS_MESSAGE', `${playerName} 설사! 같은 월 더미패가 나와 패를 가져오지 못했습니다.${reward}`);
+
+    const handMesh = this.cardMeshes.get(handCard.id);
+    const deckMesh = this.cardMeshes.get(deckCard.id);
+    if (handMesh) await this.animator.moveTo(handMesh, this.getFloorPosition(this.gameState.floorCards.length - 2), 0, true, 220);
+    if (deckMesh) await this.animator.moveTo(deckMesh, this.getFloorPosition(this.gameState.floorCards.length - 1), 0, true, 220);
+    this.repositionFloor();
   }
 
   private async applyMatchResult(

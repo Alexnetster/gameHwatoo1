@@ -1,6 +1,6 @@
 import { CardDef, PlayerState } from './types';
 import { createShuffledDeck } from './deck';
-import { calculateScore, getCardFamily } from './rules';
+import { calculateScore, getCardFamily, SpecialRuleOptions, DEFAULT_SPECIAL_RULE_OPTIONS } from './rules';
 
 export type GamePhase =
   | 'IDLE'
@@ -44,6 +44,7 @@ export class GameState {
   public pendingDrawCard: CardDef | null = null;
   public pendingChoiceCandidates: CardDef[] = [];
   public turnCapturedCards: CardDef[] = []; // Cards captured in the current turn
+  public specialRuleOptions: SpecialRuleOptions = { ...DEFAULT_SPECIAL_RULE_OPTIONS };
 
   public initNewGame(random: () => number = Math.random): {
     playerHand: CardDef[];
@@ -139,6 +140,21 @@ export class GameState {
     this.turnCapturedCards.push(...cards);
     p.score = calculateScore(p.captured);
     this.validateInvariants();
+  }
+
+  public transferPi(fromPlayerId: 'player' | 'cpu', toPlayerId: 'player' | 'cpu', count: number): CardDef[] {
+    const source = fromPlayerId === 'player' ? this.player : this.cpu;
+    const target = toPlayerId === 'player' ? this.player : this.cpu;
+    const piCards = source.captured.filter((card) => card.subType === 'ssangpi' || card.category === 'junk');
+    const transferred = piCards.slice(0, Math.max(0, count));
+    for (const card of transferred) {
+      source.captured = source.captured.filter((candidate) => candidate.id !== card.id);
+      target.captured.push(card);
+    }
+    source.score = calculateScore(source.captured);
+    target.score = calculateScore(target.captured);
+    this.validateInvariants();
+    return transferred;
   }
 
   public switchTurn(): 'player' | 'cpu' {

@@ -10,6 +10,16 @@ export interface MatchResult {
   remainingOnFloor: CardDef[];
 }
 
+export interface SpecialRuleOptions {
+  seolsaEnabled: boolean;
+  seolsaPiReward: 0 | 1 | 2;
+}
+
+export const DEFAULT_SPECIAL_RULE_OPTIONS: SpecialRuleOptions = {
+  seolsaEnabled: true,
+  seolsaPiReward: 0,
+};
+
 export function validateMatchResult(result: MatchResult): void {
   if (result.type === 'none' && result.captured.length !== 0) {
     throw new Error('A non-matching play cannot capture cards');
@@ -35,6 +45,16 @@ export function validateMatchResult(result: MatchResult): void {
 /** The first two digits of the card id are the authoritative month family. */
 export function getCardFamily(card: CardDef): number {
   return Number.parseInt(card.id.slice(0, 2), 10);
+}
+
+export function isSeolsa(
+  handMatch: MatchResult,
+  drawnCard: CardDef,
+  options: SpecialRuleOptions = DEFAULT_SPECIAL_RULE_OPTIONS,
+): boolean {
+  return options.seolsaEnabled &&
+    handMatch.type === 'single' &&
+    getCardFamily(handMatch.playedCard) === getCardFamily(drawnCard);
 }
 
 export function findFloorMatches(playedCard: CardDef, floorCards: CardDef[]): CardDef[] {

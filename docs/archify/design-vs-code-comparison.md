@@ -23,7 +23,8 @@
 
 1. **Automated rule coverage** — Vitest now covers no-match, single, choice, triple, malformed-result rejection, initial 48-card conservation and basic scoring. Deck-draw/Go-Stop flow tests remain.
 2. **Deck-draw choice path** — verify with a deterministic fixture that a two-match on the revealed deck card pauses, shows two distinct cards and captures exactly the selected pair after resolution.
-3. **Physical card identity in UI** — the family is correctly derived from card IDs, but the atlas and card labels need visual regression checks so a 6-month junk card and 6-month animal card cannot appear identical.
+3. **Special draw events** — Seolsa detection is now deferred until the deck reveal; Ttadak, Jjok and optional Pi transfers still need their full state-flow tests.
+4. **Physical card identity in UI** — the family is correctly derived from card IDs, but the atlas and card labels need visual regression checks so a 6-month junk card and 6-month animal card cannot appear identical.
 4. **Scoring completeness** — current scoring covers basic gwang, animal, godori, ribbon and junk thresholds; regional variants, bomb/three-player rules and special-pi rules are not represented.
 5. **Responsive density** — test at 390×844, 768×1024 and desktop widths with large captured collections. The current thumbnail tray is a mitigation, not a complete overflow policy.
 6. **Encoding cleanup** — some user-facing Korean strings are visibly corrupted in the current source snapshot. Normalize them before final UX review.

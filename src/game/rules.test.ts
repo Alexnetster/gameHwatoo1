@@ -3,6 +3,7 @@ import { HWATU_CARDS } from './deck';
 import {
   calculateScoreBreakdown,
   evaluateCardMatch,
+  isSeolsa,
   validateMatchResult,
 } from './rules';
 
@@ -43,6 +44,14 @@ describe('Hwatu match rules', () => {
     expect(result.type).toBe('single');
     expect(result.captured.map((item) => item.id)).toEqual(['06_01', '06_03']);
     expect(result.remainingOnFloor.map((item) => item.id)).toEqual(['06_02']);
+  });
+
+  it('recognizes Seolsa when the deck repeats the hand-match family', () => {
+    const handMatch = evaluateCardMatch(card('06_01'), [card('06_02')]);
+
+    expect(isSeolsa(handMatch, card('06_03'))).toBe(true);
+    expect(isSeolsa(handMatch, card('07_03'))).toBe(false);
+    expect(isSeolsa(handMatch, card('06_03'), { seolsaEnabled: false, seolsaPiReward: 0 })).toBe(false);
   });
 
   it('captures all four family cards when three are on the floor', () => {
