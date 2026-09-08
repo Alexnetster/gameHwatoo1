@@ -20,8 +20,15 @@ export function validateMatchResult(result: MatchResult): void {
   if (result.type === 'single' && result.captured.length !== 2) {
     throw new Error(`A single match must capture 2 cards, got ${result.captured.length}`);
   }
-  if (result.type === 'triple' && result.captured.length < 4) {
-    throw new Error(`A triple match must capture at least 4 cards, got ${result.captured.length}`);
+  if (result.type === 'triple' && result.captured.length !== 4) {
+    throw new Error(`A triple match must capture exactly 4 cards, got ${result.captured.length}`);
+  }
+
+  if (
+    (result.type === 'single' || result.type === 'triple') &&
+    !result.captured.some((card) => card.id === result.playedCard.id)
+  ) {
+    throw new Error(`${result.type} match must include the played card in captured cards`);
   }
 }
 

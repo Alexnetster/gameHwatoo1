@@ -76,7 +76,7 @@
 - 함수 인자의 `'player' | 'cpu'` 반복은 기존 `PlayerId` 타입으로 통일 가능.
 - 이벤트 이름과 payload가 문자열 기반이라 오타를 컴파일 타임에 잡지 못한다. 이벤트 맵 타입이 필요하다.
 - `Game.ts`는 기능이 집중되어 있으므로 룰 안정화 이후 턴 진행·레이아웃·획득패 표시를 분리할 수 있다.
-- `validateMatchResult()`는 현재 장수 중심 검증이다. `triple`은 정확히 4장인지, captured와 remaining floor가 실제로 일치하는지도 테스트에서 검증해야 한다.
+- `validateMatchResult()`는 이제 `triple`을 정확히 4장으로 제한하고 single/triple 결과에 낸 패가 포함되는지 확인한다. captured와 remaining floor의 전체 일치성은 다음 테스트 작업에서 검증해야 한다.
 
 ## 검증 한계
 
