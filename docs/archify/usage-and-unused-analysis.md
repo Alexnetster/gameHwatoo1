@@ -80,6 +80,6 @@
 
 ## 검증 한계
 
-- `package.json`에 테스트 러너가 없다.
-- `npm run build`와 TypeScript `noUnusedLocals`는 통과하지만 exported/public API의 미호출 여부는 보장하지 않는다.
+- `package.json`에 Vitest 테스트 러너가 추가되었고 현재 룰·초기 배분 테스트를 실행한다.
+- `npm test`와 `npm run build`는 통과하지만 exported/public API의 미호출 여부는 보장하지 않는다.
 - 따라서 위의 “직접 호출되지 않음”은 소스 검색 기준이며, 향후 테스트·화면 수명주기 추가에 따라 재평가해야 한다.

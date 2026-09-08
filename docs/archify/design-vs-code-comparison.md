@@ -21,7 +21,7 @@
 
 ## Gaps and follow-up work
 
-1. **Automated rule coverage** — `package.json` has no test script. Add focused tests for all match cardinalities, deck draw resolution, card-zone conservation and scoring breakdown.
+1. **Automated rule coverage** — Vitest now covers no-match, single, choice, triple, malformed-result rejection, initial 48-card conservation and basic scoring. Deck-draw/Go-Stop flow tests remain.
 2. **Deck-draw choice path** — verify with a deterministic fixture that a two-match on the revealed deck card pauses, shows two distinct cards and captures exactly the selected pair after resolution.
 3. **Physical card identity in UI** — the family is correctly derived from card IDs, but the atlas and card labels need visual regression checks so a 6-month junk card and 6-month animal card cannot appear identical.
 4. **Scoring completeness** — current scoring covers basic gwang, animal, godori, ribbon and junk thresholds; regional variants, bomb/three-player rules and special-pi rules are not represented.
@@ -41,7 +41,7 @@
 
 ### Potentially missing or unverified
 
-- No formal test harness currently verifies that every exported rule function is exercised.
+- Vitest now verifies the core rule functions, but asynchronous deck-draw and Go/Stop paths are not yet covered.
 - No static dead-code report is available; unused exports are therefore not classified as dead.
 - No screenshot baseline or automated device viewport matrix is checked into the repository.
 - No persisted replay/seed mechanism is exposed through the UI, although the deck initializer accepts an injectable random source for tests.
