@@ -33,6 +33,18 @@ describe('Hwatu match rules', () => {
     expect(result.candidates?.map((item) => item.id)).toEqual(['06_02', '06_03']);
   });
 
+  it('captures only the selected candidate after a two-card choice', () => {
+    const result = evaluateCardMatch(
+      card('06_01'),
+      [card('06_02'), card('06_03')],
+      card('06_03'),
+    );
+
+    expect(result.type).toBe('single');
+    expect(result.captured.map((item) => item.id)).toEqual(['06_01', '06_03']);
+    expect(result.remainingOnFloor.map((item) => item.id)).toEqual(['06_02']);
+  });
+
   it('captures all four family cards when three are on the floor', () => {
     const result = evaluateCardMatch(card('06_01'), [card('06_02'), card('06_03'), card('06_04')]);
 
