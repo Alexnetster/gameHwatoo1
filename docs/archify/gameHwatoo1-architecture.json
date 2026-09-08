@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "manual-archify-1",
+  "generatedAt": "2026-09-08",
+  "repository": "git.gameHwatoo1",
+  "generator": {
+    "mode": "manual-source-inspection",
+    "archifyCliAvailable": false,
+    "note": "Generated from the current TypeScript, HTML, CSS and asset layout. Validate against source after major changes."
+  },
+  "runtime": {
+    "entrypoint": "src/main.ts",
+    "htmlEntry": "index.html",
+    "devCommand": "npm run dev",
+    "buildCommand": "npm run build",
+    "framework": "Vite",
+    "language": "TypeScript",
+    "renderer": "Three.js"
+  },
+  "layers": [
+    {
+      "name": "bootstrap-and-ui",
+      "paths": ["src/main.ts", "index.html"],
+      "responsibility": "DOM event wiring, overlays, status, choice, Go/Stop and result modals"
+    },
+    {
+      "name": "game-domain",
+      "paths": ["src/game/types.ts", "src/game/deck.ts", "src/game/rules.ts", "src/game/GameState.ts", "src/game/Game.ts", "src/game/cpu.ts", "src/game/EventBus.ts"],
+      "responsibility": "48-card data, zone invariants, matching, scoring, turn state and CPU decisions"
+    },
+    {
+      "name": "three-rendering",
+      "paths": ["src/three/SceneManager.ts", "src/three/CardMesh.ts", "src/three/CardAnimator.ts", "src/three/InteractionManager.ts"],
+      "responsibility": "Scene, card meshes, pointer interaction, animation and responsive camera/layout scale"
+    },
+    {
+      "name": "assets",
+      "paths": ["src/utils/AssetManager.ts", "public/cards/Hwatu_overview.svg"],
+      "responsibility": "Sprite extraction, texture lookup and card image data URLs"
+    }
+  ],
+  "modules": [
+    {"path": "src/main.ts", "exports": [], "role": "application bootstrap"},
+    {"path": "src/game/types.ts", "exports": ["CardCategory", "SubType", "CardDef", "PlayerId", "PlayerState"], "role": "domain types"},
+    {"path": "src/game/deck.ts", "exports": ["HWATU_CARDS", "createShuffledDeck"], "role": "canonical 48-card deck"},
+    {"path": "src/game/rules.ts", "exports": ["MatchResultType", "MatchResult", "validateMatchResult", "getCardFamily", "findFloorMatches", "evaluateCardMatch", "calculateScore", "ScoreBreakdown", "calculateScoreBreakdown"], "role": "match and score rules"},
+    {"path": "src/game/GameState.ts", "exports": ["GamePhase", "GameState"], "role": "zones, phases and invariants"},
+    {"path": "src/game/Game.ts", "exports": ["Game"], "role": "turn orchestration and scene placement"},
+    {"path": "src/game/cpu.ts", "exports": ["CpuAI"], "role": "CPU card selection"},
+    {"path": "src/game/EventBus.ts", "exports": ["EventCallback", "EventBus"], "role": "application event transport"},
+    {"path": "src/three/CardMesh.ts", "exports": ["CARD_WIDTH", "CARD_HEIGHT", "CARD_DEPTH", "CardMesh"], "role": "card render object"},
+    {"path": "src/three/SceneManager.ts", "exports": ["SceneManager"], "role": "camera, renderer and responsive scale"},
+    {"path": "src/three/CardAnimator.ts", "exports": ["TweenItem", "CardAnimator"], "role": "card movement animation"},
+    {"path": "src/three/InteractionManager.ts", "exports": ["CardClickHandler", "InteractionManager"], "role": "raycast input"},
+    {"path": "src/utils/AssetManager.ts", "exports": ["AssetManager"], "role": "SVG sprite atlas and image URLs"}
+  ],
+  "dependencies": [
+    {"from": "src/main.ts", "to": "src/game/Game.ts", "kind": "creates"},
+    {"from": "src/main.ts", "to": "src/game/EventBus.ts", "kind": "subscribes"},
+    {"from": "src/game/Game.ts", "to": "src/game/GameState.ts", "kind": "owns"},
+    {"from": "src/game/Game.ts", "to": "src/game/rules.ts", "kind": "evaluates"},
+    {"from": "src/game/Game.ts", "to": "src/game/cpu.ts", "kind": "delegates CPU choices"},
+    {"from": "src/game/Game.ts", "to": "src/three/", "kind": "orchestrates rendering"},
+    {"from": "src/game/GameState.ts", "to": "src/game/deck.ts", "kind": "deals"},
+    {"from": "src/utils/AssetManager.ts", "to": "public/cards/Hwatu_overview.svg", "kind": "loads"}
+  ],
+  "gameModel": {
+    "deckSize": 48,
+    "families": 12,
+    "cardsPerFamily": 4,
+    "initialDeal": {"playerHand": 10, "cpuHand": 10, "floor": 8, "deck": 20},
+    "matchTypes": ["none", "single", "choice", "triple"],
+    "phases": ["IDLE", "DEALING", "PLAYER_SELECT", "PLAYER_CHOICE", "PLAYER_DRAW", "PLAYER_DRAW_CHOICE", "CPU_TURN", "GO_STOP", "ROUND_OVER"],
+    "turnSequence": ["play hand card", "resolve floor match", "draw deck card", "resolve floor match", "check go/stop", "switch turn"]
+  },
+  "knownRisks": [
+    "No automated test script is declared in package.json.",
+    "Some user-facing Korean strings currently show encoding corruption in source and should be normalized separately.",
+    "The sprite atlas mapping is source-specific and needs a visual regression check when the SVG changes.",
+    "Score rules are a basic implementation and do not yet cover every regional Go-Stop rule or bonus.",
+    "Captured cards use a dedicated thumbnail tray, but dense late-game collections still need viewport testing."
+  ]
+}
