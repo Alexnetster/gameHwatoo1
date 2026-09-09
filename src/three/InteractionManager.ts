@@ -3,7 +3,7 @@ import { CardMesh } from './CardMesh';
 import { SceneManager } from './SceneManager';
 
 export interface CardClickHandler {
-  (cardMesh: CardMesh): void;
+  (cardMesh: CardMesh): void | Promise<void>;
 }
 
 export class InteractionManager {
@@ -74,11 +74,9 @@ export class InteractionManager {
 
   private notifyCardClick(cardMesh: CardMesh): void {
     this.onCardClickListeners.forEach((handler) => {
-      try {
-        handler(cardMesh);
-      } catch (err) {
+      Promise.resolve().then(() => handler(cardMesh)).catch((err) => {
         console.error('Error in card click handler:', err);
-      }
+      });
     });
   }
 

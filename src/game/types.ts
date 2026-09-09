@@ -22,4 +22,5 @@ export interface PlayerState {
   captured: CardDef[];
   score: number;
   goCount: number;
+  scoreAtLastGo: number;
 }

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { HWATU_CARDS } from './deck';
 import {
   calculateScoreBreakdown,
+  calculateScoreHints,
+  calculateFinalScore,
+  calculateGoMultiplier,
   evaluateCardMatch,
   isSeolsa,
   validateMatchResult,
@@ -89,5 +92,34 @@ describe('Hwatu scoring breakdown', () => {
 
     expect(breakdown.total).toBe(1);
     expect(breakdown.reasons).toContain('피 10장 단위 = 1점');
+  });
+});
+
+describe('Hwatu scoring hints', () => {
+  it('warns about milestones that are one or two cards away', () => {
+    const hints = calculateScoreHints([
+      card('01_01'), card('03_01'),
+      card('02_01'), card('04_01'),
+      card('01_02'), card('02_02'),
+      card('01_03'), card('02_03'), card('03_03'), card('04_03'),
+      card('05_03'), card('06_03'), card('07_03'), card('08_03'),
+    ]);
+
+    expect(hints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: '광', current: 2, target: 3, remaining: 1 }),
+      expect.objectContaining({ label: '고도리', current: 2, target: 3, remaining: 1 }),
+      expect.objectContaining({ label: '홍단', current: 2, target: 3, remaining: 1 }),
+      expect.objectContaining({ label: '피', current: 8, target: 10, remaining: 2 }),
+    ]));
+  });
+});
+
+describe('Go multiplier', () => {
+  it('uses 2x, 4x, and 8x for 1, 2, and 3 go', () => {
+    expect(calculateGoMultiplier(0)).toBe(1);
+    expect(calculateGoMultiplier(1)).toBe(2);
+    expect(calculateGoMultiplier(2)).toBe(4);
+    expect(calculateGoMultiplier(3)).toBe(8);
+    expect(calculateFinalScore(3, 3)).toBe(24);
   });
 });

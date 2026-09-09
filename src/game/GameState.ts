@@ -25,6 +25,7 @@ export class GameState {
     captured: [],
     score: 0,
     goCount: 0,
+    scoreAtLastGo: 0,
   };
 
   public cpu: PlayerState = {
@@ -34,6 +35,7 @@ export class GameState {
     captured: [],
     score: 0,
     goCount: 0,
+    scoreAtLastGo: 0,
   };
 
   public floorCards: CardDef[] = [];
@@ -68,11 +70,13 @@ export class GameState {
     this.player.captured = [];
     this.player.score = 0;
     this.player.goCount = 0;
+    this.player.scoreAtLastGo = 0;
 
     this.cpu.hand = [...cpuHand];
     this.cpu.captured = [];
     this.cpu.score = 0;
     this.cpu.goCount = 0;
+    this.cpu.scoreAtLastGo = 0;
 
     this.floorCards = [...floor];
     this.deck = [...remainingDeck];
@@ -123,6 +127,10 @@ export class GameState {
   public drawCardFromDeck(): CardDef | null {
     if (this.deck.length === 0) return null;
     return this.deck.pop() || null;
+  }
+
+  public peekDeckCard(): CardDef | null {
+    return this.deck.length > 0 ? this.deck[this.deck.length - 1] : null;
   }
 
   public removeCardFromHand(playerId: 'player' | 'cpu', cardId: string): CardDef | undefined {

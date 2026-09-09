@@ -133,9 +133,55 @@ export function calculateScore(captured: CardDef[]): number {
   return calculateScoreBreakdown(captured).total;
 }
 
+export function calculateGoMultiplier(goCount: number): number {
+  return 2 ** Math.max(0, goCount);
+}
+
+export function calculateFinalScore(score: number, goCount: number): number {
+  return score * calculateGoMultiplier(goCount);
+}
+
 export interface ScoreBreakdown {
   total: number;
   reasons: string[];
+}
+
+export interface ScoreHint {
+  label: string;
+  current: number;
+  target: number;
+  remaining: number;
+}
+
+/** Reports scoring milestones that are close but not complete yet. */
+export function calculateScoreHints(captured: CardDef[]): ScoreHint[] {
+  const hints: ScoreHint[] = [];
+  const addHint = (label: string, current: number, target: number): void => {
+    if (current < target && target - current <= 2) {
+      hints.push({ label, current, target, remaining: target - current });
+    }
+  };
+
+  addHint('목표 점수', calculateScore(captured), 3);
+  const gwang = captured.filter((card) => card.category === 'gwang').length;
+  addHint('광', gwang, 3);
+
+  const animals = captured.filter((card) => card.category === 'animal');
+  addHint('열끗', animals.length, 5);
+  addHint('고도리', animals.filter((card) => card.subType === 'godori').length, 3);
+
+  const ribbons = captured.filter((card) => card.category === 'ribbon');
+  addHint('띠', ribbons.length, 5);
+  for (const [label, subType] of [['홍단', 'hongdan'], ['청단', 'cheongdan'], ['초단', 'chodan']] as const) {
+    addHint(label, ribbons.filter((card) => card.subType === subType).length, 3);
+  }
+
+  const piValue = captured
+    .filter((card) => card.category === 'junk')
+    .reduce((total, card) => total + (card.subType === 'ssangpi' ? 2 : 1), 0);
+  addHint('피', piValue, 10);
+
+  return hints.sort((a, b) => a.remaining - b.remaining);
 }
 
 export function calculateScoreBreakdown(captured: CardDef[]): ScoreBreakdown {

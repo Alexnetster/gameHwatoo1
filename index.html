@@ -50,6 +50,13 @@
         gap: 6px;
         padding: 10px 12px 0;
       }
+      #btn-restart {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        z-index: 2;
+        pointer-events: auto;
+      }
 
       /* BOTTOM panel: player bar + action bar pinned at bottom */
       .ui-bottom {
@@ -269,6 +276,7 @@
       #capture-notice.visible { opacity: 1; transform: translate(-50%, 0); }
       #capture-notice img { width: 28px; height: 46px; object-fit: contain; }
       #capture-notice span { color: #FCD34D; font-size: 11px; }
+      #capture-notice .score-hints { color: #86EFAC; font-size: 11px; font-weight: 700; }
       #result-modal {
         display: none;
         position: absolute;
@@ -279,6 +287,29 @@
         padding: 20px;
         background: rgba(0, 0, 0, .72);
       }
+      #start-modal {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 55;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, .38);
+      }
+      .start-dialog {
+        width: min(360px, 100%);
+        padding: 30px 24px;
+        text-align: center;
+        color: #fff;
+        background: #17211B;
+        border: 1px solid rgba(252, 211, 77, .45);
+        border-radius: 22px;
+        box-shadow: 0 14px 42px rgba(0, 0, 0, .55);
+      }
+      .start-dialog h1 { margin-bottom: 10px; font-size: 28px; }
+      .start-dialog p { margin-bottom: 22px; color: #CBD5E1; }
+      #btn-start { min-width: 180px; min-height: 46px; background: #22C55E; color: #052E16; }
       .result-dialog {
         width: min(390px, 100%);
         padding: 28px 24px;
@@ -349,13 +380,16 @@
 
         <!-- TOP PANEL: CPU bar + status banner -->
         <div class="ui-top">
+          <button id="btn-restart" class="btn" type="button">재시작</button>
           <div class="player-bar">
             <div class="player-info">
               <span class="player-badge cpu">CPU</span>
               <span class="player-name">상대방</span>
             </div>
             <div class="captured-summary" id="cpu-captured-summary">
-              <span class="score-chip">점수 <b id="cpu-score">0</b></span>
+               <span class="score-chip">점수 <b id="cpu-score">0</b></span>
+               <span class="tag">고 <b id="cpu-go">0</b></span>
+               <span class="tag">배 <b id="cpu-multiplier">1배</b></span>
               <span class="tag">광 <b id="cpu-gwang">0</b></span>
               <span class="tag">열 <b id="cpu-animal">0</b></span>
               <span class="tag">띠 <b id="cpu-ribbon">0</b></span>
@@ -375,18 +409,25 @@
               <span class="player-name">나 (플레이어)</span>
             </div>
             <div class="captured-summary" id="player-captured-summary">
-              <span class="score-chip">점수 <b id="player-score">0</b></span>
+               <span class="score-chip">점수 <b id="player-score">0</b></span>
+               <span class="tag">고 <b id="player-go">0</b></span>
+               <span class="tag">배 <b id="player-multiplier">1배</b></span>
               <span class="tag">광 <b id="player-gwang">0</b></span>
               <span class="tag">열 <b id="player-animal">0</b></span>
               <span class="tag">띠 <b id="player-ribbon">0</b></span>
               <span class="tag">피 <b id="player-junk">0</b></span>
             </div>
           </div>
-          <div class="action-bar">
-            <button id="btn-restart" class="btn" style="pointer-events:auto;">새 게임 시작</button>
-          </div>
         </div>
 
+      </div>
+
+      <div id="start-modal">
+        <div class="start-dialog">
+          <h1>모바일 맞고</h1>
+          <p>카드를 모아 먼저 점수를 올려보세요.</p>
+          <button id="btn-start" class="btn">새 게임 시작</button>
+        </div>
       </div>
 
       <!-- Choice Modal (2 cards match on floor) -->
