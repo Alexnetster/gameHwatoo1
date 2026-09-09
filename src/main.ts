@@ -14,14 +14,57 @@ async function bootstrap(): Promise<void> {
   const resultModal = document.getElementById('result-modal');
   const startModal = document.getElementById('start-modal');
   const captureNotice = document.getElementById('capture-notice');
+  const scorePanel = document.getElementById('score-panel');
+  const scorePanelOverlay = document.getElementById('score-panel-overlay');
+  const scorePanelContent = document.getElementById('score-panel-content');
+  const btnScoreDetails = document.getElementById('btn-score-details');
+  const btnCaptureToggle = document.getElementById('btn-capture-toggle');
+  const btnScorePanelClose = document.getElementById('btn-score-panel-close');
   const btnStart = document.getElementById('btn-start');
   const btnRestart = document.getElementById('btn-restart');
+  let captureNoticeEnabled = localStorage.getItem('hwatu-capture-notice') !== 'off';
+  let captureNoticeTimer = 0;
 
   if (!container) throw new Error('game-container element not found');
 
   const eventBus = EventBus.getInstance();
   const game = new Game(container);
   const text = (id: string): HTMLElement | null => document.getElementById(id);
+
+  const updateCaptureToggle = (): void => {
+    if (!btnCaptureToggle) return;
+    btnCaptureToggle.innerText = `획득 안내 ${captureNoticeEnabled ? '켬' : '끔'}`;
+    btnCaptureToggle.setAttribute('aria-pressed', String(captureNoticeEnabled));
+  };
+
+  const updateScorePanel = (captured: CardDef[] = []): void => {
+    if (!scorePanelContent) return;
+    const breakdown = calculateScoreBreakdown(captured);
+    const hints = calculateScoreHints(captured);
+    const counts = {
+      광: captured.filter((card) => card.category === 'gwang').length,
+      열끗: captured.filter((card) => card.category === 'animal').length,
+      띠: captured.filter((card) => card.category === 'ribbon').length,
+      피: captured.filter((card) => card.category === 'junk').reduce((sum, card) => sum + (card.subType === 'ssangpi' ? 2 : 1), 0),
+    };
+    scorePanelContent.innerHTML = `
+      <div class="score-panel-total"><span>현재 점수</span><strong>${breakdown.total}점</strong></div>
+      <div class="score-panel-counts">${Object.entries(counts).map(([label, count]) => `<span>${label} <b>${count}</b></span>`).join('')}</div>
+      <section class="score-panel-section"><h3>점수 내역</h3><p>${breakdown.reasons.length > 0 ? breakdown.reasons.join(' · ') : '아직 점수 조건을 충족하지 않았습니다.'}</p></section>
+      <section class="score-panel-section"><h3>다음 목표</h3><p>${hints.length > 0 ? hints.slice(0, 5).map((hint) => `${hint.label} ${hint.remaining}${hint.label === '목표 점수' ? '점' : '장'} 남음`).join(' · ') : '새로운 점수 목표를 만들어 보세요.'}</p></section>
+      <section class="score-panel-section score-rules"><h3>룰 한눈에 보기</h3><ul><li>광 3장부터 점수 획득 (비광 포함 시 2점)</li><li>열끗·띠는 5장부터, 피는 10장마다 1점</li><li>고도리 3장 = 5점 · 홍단/청단/초단 = 3점</li></ul></section>`;
+  };
+
+  const setScorePanelOpen = (open: boolean): void => {
+    if (!scorePanel || !scorePanelOverlay) return;
+    scorePanel.classList.toggle('open', open);
+    scorePanelOverlay.classList.toggle('visible', open);
+    scorePanel.setAttribute('aria-hidden', String(!open));
+    if (open) btnScorePanelClose?.focus();
+  };
+
+  updateCaptureToggle();
+  updateScorePanel();
 
   eventBus.on('STATUS_MESSAGE', (message: string) => {
     if (statusBanner) statusBanner.innerText = message;
@@ -34,6 +77,8 @@ async function bootstrap(): Promise<void> {
       const element = text(id);
       if (element) element.innerText = id.includes('multiplier') ? '1배' : '0';
     }
+    updateScorePanel();
+    setScorePanelOpen(false);
   });
 
   eventBus.on('GO_COUNT_CHANGED', ({ playerId, goCount, multiplier }: { playerId: 'player' | 'cpu'; goCount: number; multiplier: number }) => {
@@ -69,8 +114,10 @@ async function bootstrap(): Promise<void> {
     const scoreElement = text(`${prefix}-score`);
     if (scoreElement) scoreElement.innerText = score.toString();
 
-    if (playerId === 'player' && captureNotice) {
+    if (playerId === 'player') {
       const breakdown = calculateScoreBreakdown(total);
+      updateScorePanel(total);
+      if (!captureNotice || !captureNoticeEnabled) return;
       const reason = breakdown.reasons.length > 0 ? breakdown.reasons.join(' · ') : '아직 점수 조건을 충족하지 않았습니다.';
       const hints = calculateScoreHints(total);
       const hintText = hints.length > 0
@@ -78,7 +125,8 @@ async function bootstrap(): Promise<void> {
         : '';
       captureNotice.innerHTML = `<strong>획득 ${captured.length}장 · 현재 ${score}점</strong><span>${reason}</span><span class="score-hints">${hintText}</span>${captured.map((card) => `<img src="${AssetManager.getInstance().getCardImageUrl(card)}" alt="${card.name}">`).join('')}`;
       captureNotice.classList.add('visible');
-      window.setTimeout(() => captureNotice.classList.remove('visible'), 2400);
+      window.clearTimeout(captureNoticeTimer);
+      captureNoticeTimer = window.setTimeout(() => captureNotice.classList.remove('visible'), 2400);
     }
   });
 
@@ -148,6 +196,18 @@ async function bootstrap(): Promise<void> {
     if (choiceModal) choiceModal.style.display = 'none';
     if (resultModal) resultModal.style.display = 'none';
     void game.startNewRound();
+  });
+  btnCaptureToggle?.addEventListener('click', () => {
+    captureNoticeEnabled = !captureNoticeEnabled;
+    localStorage.setItem('hwatu-capture-notice', captureNoticeEnabled ? 'on' : 'off');
+    updateCaptureToggle();
+    if (!captureNoticeEnabled) captureNotice?.classList.remove('visible');
+  });
+  btnScoreDetails?.addEventListener('click', () => setScorePanelOpen(true));
+  btnScorePanelClose?.addEventListener('click', () => setScorePanelOpen(false));
+  scorePanelOverlay?.addEventListener('click', () => setScorePanelOpen(false));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setScorePanelOpen(false);
   });
 
   try {
