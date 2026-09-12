@@ -46,7 +46,9 @@
 - Vitest 기반 결정적 룰·초기 배분 테스트
 - 설사 감지 및 설사 피 회수 설정 API
 - 점수·획득 결과 설명 UI의 기본 기반
+- 점수·룰 바텀시트 패널 및 획득 안내 켬/끔 토글
 - 반응형 카드 배치 및 획득패 별도 축소 트레이
+- Chrome + Playwright 기반 점수 UX 모바일 검증
 
 ## 남은 작업 우선순위
 
@@ -62,7 +64,7 @@
 
 1. `RuleProfile` 및 `RuleOptions`를 기본 룰/맞고/사용자 설정으로 확장.
 2. 게임 시작 화면에서 목표 점수, 쌍피, 첫뻑, 첫따닥, 쓸, 설사, 피 회수 옵션을 선택하게 한다.
-3. 게임 중 적용 중인 룰을 확인하는 규칙 설명 패널을 추가한다.
+3. 게임 중 적용 중인 룰을 확인하는 규칙 설명 패널을 `점수·룰 보기` 바텀시트와 연결해 RuleProfile 기반으로 확장한다.
 4. 점수 계산 결과에 기본 점수·고 보너스·배수·박을 단계별로 표시한다.
 5. 국진 등 대체 역할 카드 선택 UI를 추가한다.
 
@@ -83,10 +85,20 @@
 4. 이벤트 수명주기와 `EventBus.clear()`, `InteractionManager.dispose()` 호출 경로를 정리한다.
 5. 사용자 노출 한국어 문자열 인코딩을 전체 점검한다.
 
+### P2: Combos CLI·오디오 PoC
+
+1. Combos CLI의 실제 설치법, 인증, 프로젝트 업로드와 배포 명령을 확인한다.
+2. 현재 Three.js 프로젝트 또는 최소 테스트 게임을 배포할 수 있는지 검증한다.
+3. BGM과 카드 놓기·획득·점수 효과음을 생성하거나 업로드한다.
+4. 다운로드한 오디오를 `public/audio/`에 연결하고 음소거·볼륨 설정을 추가한다.
+5. 비용, 크레딧, 라이선스, export 제한과 멀티플레이 지원 여부를 기록한다.
+
 ## 최근 검증·커밋
 
 - `npm test`: 10개 테스트 통과
 - `npm run build`: 성공
+- 점수 룰 패널 및 토글: `2004f9e feat: add score rules panel toggle`
+- Chrome + Playwright: 390×844·320×568 점수 UX 및 localStorage 동작 통과
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`
 - `93b10ba test: add deterministic rule coverage`
