@@ -6,6 +6,7 @@ import {
   calculateFinalScore,
   calculateGoMultiplier,
   evaluateCardMatch,
+  evaluateDadakMatch,
   isSeolsa,
   validateMatchResult,
 } from './rules';
@@ -63,6 +64,26 @@ describe('Hwatu match rules', () => {
     expect(result.type).toBe('triple');
     expect(result.captured.map((item) => item.id)).toEqual(['06_01', '06_02', '06_03', '06_04']);
     expect(result.remainingOnFloor).toHaveLength(0);
+  });
+
+  it('captures hand, two floor cards, and deck card as 따닥', () => {
+    const result = evaluateDadakMatch(
+      card('06_01'),
+      [card('06_02'), card('06_03'), card('07_01')],
+      card('06_04'),
+    );
+
+    expect(result?.type).toBe('dadak');
+    expect(result?.captured.map((item) => item.id)).toEqual(['06_01', '06_02', '06_03', '06_04']);
+    expect(result?.remainingOnFloor.map((item) => item.id)).toEqual(['07_01']);
+  });
+
+  it('does not classify a two-card choice as 따닥 when the deck family differs', () => {
+    expect(evaluateDadakMatch(
+      card('06_01'),
+      [card('06_02'), card('06_03')],
+      card('07_04'),
+    )).toBeNull();
   });
 
   it('rejects malformed triple results instead of allowing odd capture counts', () => {

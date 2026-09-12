@@ -1,12 +1,13 @@
 import { CardDef } from './types';
 
-export type MatchResultType = 'none' | 'single' | 'choice' | 'triple';
+export type MatchResultType = 'none' | 'single' | 'choice' | 'triple' | 'dadak';
 
 export interface MatchResult {
   type: MatchResultType;
   playedCard: CardDef;
   captured: CardDef[];
   candidates?: CardDef[]; // When type === 'choice'
+  drawnCard?: CardDef; // The deck card included in a dadak capture
   remainingOnFloor: CardDef[];
 }
 
@@ -33,13 +34,47 @@ export function validateMatchResult(result: MatchResult): void {
   if (result.type === 'triple' && result.captured.length !== 4) {
     throw new Error(`A triple match must capture exactly 4 cards, got ${result.captured.length}`);
   }
+  if (result.type === 'dadak' && result.captured.length !== 4) {
+    throw new Error(`A dadak match must capture exactly 4 cards, got ${result.captured.length}`);
+  }
+  if (result.type === 'dadak') {
+    if (!result.drawnCard || !result.captured.some((card) => card.id === result.drawnCard!.id)) {
+      throw new Error('A dadak match must include the drawn card in captured cards');
+    }
+  }
 
   if (
-    (result.type === 'single' || result.type === 'triple') &&
+    (result.type === 'single' || result.type === 'triple' || result.type === 'dadak') &&
     !result.captured.some((card) => card.id === result.playedCard.id)
   ) {
     throw new Error(`${result.type} match must include the played card in captured cards`);
   }
+}
+
+/**
+ * 따닥: two cards of a family are already on the floor, and both the hand
+ * card and the revealed deck card complete that same family.  The deck card
+ * is deliberately included in the result so the caller can remove it from
+ * the deck atomically with the four-card capture.
+ */
+export function evaluateDadakMatch(
+  playedCard: CardDef,
+  floorCards: CardDef[],
+  drawnCard: CardDef,
+): MatchResult | null {
+  const matches = findFloorMatches(playedCard, floorCards);
+  if (matches.length !== 2 || getCardFamily(drawnCard) !== getCardFamily(playedCard)) {
+    return null;
+  }
+  const result: MatchResult = {
+    type: 'dadak',
+    playedCard,
+    drawnCard,
+    captured: [playedCard, ...matches, drawnCard],
+    remainingOnFloor: floorCards.filter((card) => !matches.some((match) => match.id === card.id)),
+  };
+  validateMatchResult(result);
+  return result;
 }
 
 /** The first two digits of the card id are the authoritative month family. */

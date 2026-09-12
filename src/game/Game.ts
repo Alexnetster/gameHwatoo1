@@ -1,6 +1,6 @@
 import { CardDef } from './types';
 import { GameState } from './GameState';
-import { calculateFinalScore, evaluateCardMatch, MatchResult, validateMatchResult, isSeolsa } from './rules';
+import { calculateFinalScore, evaluateCardMatch, evaluateDadakMatch, MatchResult, validateMatchResult, isSeolsa } from './rules';
 import { CpuAI } from './cpu';
 import { EventBus } from './EventBus';
 import { CardMesh } from '../three/CardMesh';
@@ -184,6 +184,14 @@ export class Game {
     let handMatch = evaluateCardMatch(handCard, this.gameState.floorCards);
 
     if (handMatch.type === 'choice') {
+      // A two-card floor match can become 따닥 only after the deck card is
+      // revealed. Peek without removing it so the normal choice path remains
+      // unchanged when the deck family differs.
+      const peekedDeckCard = this.gameState.peekDeckCard();
+      if (peekedDeckCard && evaluateDadakMatch(handCard, this.gameState.floorCards, peekedDeckCard)) {
+        await this.executeDeckDraw(playerId, handMatch);
+        return;
+      }
       if (playerId === 'player') {
         this.gameState.phase = 'PLAYER_CHOICE';
         this.gameState.pendingHandCard = handCard;
@@ -226,6 +234,16 @@ export class Game {
     this.eventBus.emit('STATUS_MESSAGE', `더미에서 [${deckCard.name}] 카드를 뒤집었습니다.`);
     // Keep the revealed card visible long enough for the player to read it.
     await this.delay(650);
+
+    // Resolve 따닥 before applying the deferred hand result. This captures
+    // hand + both matching floor cards + deck card as one atomic result.
+    const dadakMatch = evaluateDadakMatch(handMatch.playedCard, this.gameState.floorCards, deckCard);
+    if (dadakMatch) {
+      this.gameState.drawCardFromDeck();
+      await this.applyMatchResult(playerId, dadakMatch);
+      await this.finishTurn();
+      return;
+    }
 
     if (isSeolsa(handMatch, deckCard, this.gameState.specialRuleOptions)) {
       this.gameState.drawCardFromDeck();

@@ -49,14 +49,17 @@
 - 점수·룰 바텀시트 패널 및 획득 안내 켬/끔 토글
 - 반응형 카드 배치 및 획득패 별도 축소 트레이
 - Chrome + Playwright 기반 점수 UX 모바일 검증
+- 따닥 판정 및 플레이어/CPU 4장 원자 캡처 흐름
+- 따닥 룰·턴 흐름·48장 보존 테스트
+- Chrome + Playwright 기반 게임 진입·점수/룰 패널 회귀 검증
 
 ## 남은 작업 우선순위
 
 ### P0: 턴 흐름과 특수 이벤트 안정화
 
-1. 따닥 상태 흐름 구현: 손패 매칭 2장 → 더미 공개 → 4장 획득/뻑 처리.
+1. 완료: 따닥 상태 흐름 구현: 손패 매칭 2장 → 더미 공개 → 4장 원자 획득.
 2. 쪽 이벤트와 피 회수 처리 구현.
-3. 설사·따닥·쪽의 실제 `Game` 통합 테스트 추가.
+3. 설사·따닥·쪽의 실제 `Game` 통합 테스트 추가: 따닥 결정/플레이어·CPU 턴 흐름 테스트 완료, 브라우저 직접 재현은 별도 과제로 남김.
 4. 더미패 선택 흐름에서 2장 후보를 정확히 표시하고 선택한 2장만 획득하는지 검증.
 5. 카드 영역 보존 테스트: 손패·바닥·더미·획득패 합계가 항상 48장인지 검증.
 
@@ -99,6 +102,11 @@
 - `npm run build`: 성공
 - 점수 룰 패널 및 토글: `2004f9e feat: add score rules panel toggle`
 - Chrome + Playwright: 390×844·320×568 점수 UX 및 localStorage 동작 통과
+- `npm test`: 21개 테스트 통과 (따닥 룰·턴 흐름 포함)
+- `npx tsc --noEmit`: 성공
+- `npm run build`: 성공 (기존 500KB 초과 청크 경고만 존재)
+- Chrome + Playwright: 시작 화면→게임 진입→점수·룰 패널 열기/내용/닫기 및 콘솔 오류 없음
+- 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`
 - `93b10ba test: add deterministic rule coverage`

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameState } from './GameState';
 import { HWATU_CARDS } from './deck';
-import { evaluateCardMatch } from './rules';
+import { evaluateCardMatch, evaluateDadakMatch } from './rules';
 import type { CardDef } from './types';
 
 const card = (id: string): CardDef => HWATU_CARDS.find((item) => item.id === id)!;
@@ -105,5 +105,37 @@ describe('player turn state flow', () => {
       ...state.player.captured, ...state.cpu.captured];
     expect(zones).toHaveLength(48);
     expect(new Set(zones.map((item) => item.id)).size).toBe(48);
+  });
+
+  it('captures all four cards for a player 따닥 and advances to CPU', async () => {
+    const state = stateWith(['06_01'], ['12_01'], ['06_02', '06_03'], ['06_04']);
+    const handCard = state.removeCardFromHand('player', '06_01')!;
+    const deckCard = state.peekDeckCard()!;
+    const dadak = evaluateDadakMatch(handCard, state.floorCards, deckCard)!;
+
+    state.drawCardFromDeck();
+    state.floorCards = dadak.remainingOnFloor;
+    state.addCaptured('player', dadak.captured);
+    state.switchTurn();
+
+    expect(state.player.captured.map((item) => item.id)).toEqual(['06_01', '06_02', '06_03', '06_04']);
+    expect(state.floorCards).toHaveLength(0);
+    expect(state.phase).toBe('CPU_TURN');
+    expect(state.currentTurn).toBe('cpu');
+    state.validateInvariants();
+  });
+
+  it('supports the same 따닥 capture for CPU', () => {
+    const state = stateWith(['12_01'], ['06_01'], ['06_02', '06_03'], ['06_04']);
+    const handCard = state.removeCardFromHand('cpu', '06_01')!;
+    const deckCard = state.peekDeckCard()!;
+    const dadak = evaluateDadakMatch(handCard, state.floorCards, deckCard)!;
+
+    state.drawCardFromDeck();
+    state.floorCards = dadak.remainingOnFloor;
+    state.addCaptured('cpu', dadak.captured);
+
+    expect(state.cpu.captured.map((item) => item.id)).toEqual(['06_01', '06_02', '06_03', '06_04']);
+    state.validateInvariants();
   });
 });
