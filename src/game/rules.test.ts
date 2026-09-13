@@ -7,6 +7,7 @@ import {
   calculateGoMultiplier,
   evaluateCardMatch,
   evaluateDadakMatch,
+  evaluateJjokMatch,
   isSeolsa,
   validateMatchResult,
 } from './rules';
@@ -84,6 +85,51 @@ describe('Hwatu match rules', () => {
       [card('06_02'), card('06_03')],
       card('07_04'),
     )).toBeNull();
+  });
+
+  it('captures only the hand and deck pair as 쪽 without changing the original floor', () => {
+    const floor = [card('07_01')];
+    const result = evaluateJjokMatch(card('06_01'), floor, card('06_04'))!;
+
+    expect(result.type).toBe('jjok');
+    expect(result.playedCard).toBe(card('06_01'));
+    expect(result.drawnCard).toBe(card('06_04'));
+    expect(result.captured).toEqual([card('06_01'), card('06_04')]);
+    expect(result.remainingOnFloor).toEqual(floor);
+    expect(floor).toEqual([card('07_01')]);
+    expect(isSeolsa(evaluateCardMatch(card('06_01'), floor), card('06_04'))).toBe(false);
+    expect(evaluateDadakMatch(card('06_01'), floor, card('06_04'))).toBeNull();
+  });
+
+  it.each([
+    ['different deck month', [], '07_04'],
+    ['single floor match / seolsa', ['06_02'], '06_04'],
+    ['two floor matches / dadak', ['06_02', '06_03'], '06_04'],
+    ['three floor matches', ['06_02', '06_03', '06_04'], '07_04'],
+  ] as const)('does not report 쪽 for %s', (_label, floor, drawn) => {
+    expect(evaluateJjokMatch(card('06_01'), floor.map(card), card(drawn))).toBeNull();
+  });
+
+  it('uses the card id family for 쪽, independently of display metadata', () => {
+    expect(evaluateJjokMatch(
+      { ...card('06_01'), month: 7 },
+      [card('07_01')],
+      { ...card('06_04'), month: 8 },
+    )?.type).toBe('jjok');
+  });
+
+  it('validates the exact pair and drawn-card provenance of 쪽', () => {
+    const match = evaluateJjokMatch(card('06_01'), [], card('06_04'))!;
+    expect(() => validateMatchResult({ ...match, captured: [card('06_01')] })).toThrow('exactly 2');
+    expect(() => validateMatchResult({ ...match, drawnCard: undefined })).toThrow('drawn card');
+    expect(() => validateMatchResult({ ...match, captured: [card('06_01'), card('06_02')] })).toThrow('drawn card');
+    expect(() => validateMatchResult({ ...match, captured: [card('06_02'), card('06_04')] })).toThrow('played card');
+    expect(() => validateMatchResult({
+      ...match, drawnCard: card('06_01'), captured: [card('06_01'), card('06_01')],
+    })).toThrow('distinct');
+    expect(() => validateMatchResult({
+      ...match, drawnCard: card('07_01'), captured: [card('06_01'), card('07_01')],
+    })).toThrow('same family');
   });
 
   it('rejects malformed triple results instead of allowing odd capture counts', () => {

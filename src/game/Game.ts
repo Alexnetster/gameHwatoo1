@@ -1,6 +1,6 @@
 import { CardDef } from './types';
 import { GameState } from './GameState';
-import { calculateFinalScore, evaluateCardMatch, evaluateDadakMatch, MatchResult, validateMatchResult, isSeolsa } from './rules';
+import { calculateFinalScore, evaluateCardMatch, evaluateDadakMatch, evaluateJjokMatch, MatchResult, RuleOptions, validateMatchResult, isSeolsa } from './rules';
 import { CpuAI } from './cpu';
 import { EventBus } from './EventBus';
 import { CardMesh } from '../three/CardMesh';
@@ -20,12 +20,12 @@ export class Game {
   private selectedCardMesh: CardMesh | null = null;
   private isProcessingTurn: boolean = false;
 
-  constructor(container: HTMLElement) {
+  constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}) {
     this.sceneManager = new SceneManager(container);
     this.interactionManager = new InteractionManager(this.sceneManager, container);
     this.animator = CardAnimator.getInstance();
     this.eventBus = EventBus.getInstance();
-    this.gameState = new GameState();
+    this.gameState = new GameState(ruleOptions);
 
     this.interactionManager.onCardClick(this.handleCardClick.bind(this));
   }
@@ -252,6 +252,15 @@ export class Game {
       return;
     }
 
+    // Inspect the original floor before the unmatched hand card is placed on it.
+    const jjokMatch = evaluateJjokMatch(handMatch.playedCard, this.gameState.floorCards, deckCard);
+    if (jjokMatch) {
+      this.gameState.drawCardFromDeck();
+      await this.applyMatchResult(playerId, jjokMatch);
+      await this.finishTurn();
+      return;
+    }
+
     await this.applyMatchResult(playerId, handMatch);
     this.gameState.drawCardFromDeck();
 
@@ -335,21 +344,34 @@ export class Game {
       // Capture cards!
       this.gameState.addCaptured(playerId, match.captured);
 
-      // Animate captured cards flying to player's captured tray
-      const captured = (playerId === 'player' ? this.gameState.player : this.gameState.cpu).captured;
-      const capturePromises = captured.map((card) => {
-        const mesh = this.cardMeshes.get(card.id)!;
-        // Captured cards are thumbnails in a dedicated tray so a captured pair stays visible.
-        mesh.setDisplayScale(0.55);
-        const targetPos = this.getCapturedPosition(playerId, card, 0);
-        return this.animator.moveTo(mesh, targetPos, 0, true, 260);
-      });
-      await Promise.all(capturePromises);
+      const opponentId = playerId === 'player' ? 'cpu' : 'player';
+      const transferred = match.type === 'jjok'
+        ? this.gameState.transferPi(opponentId, playerId, this.gameState.specialRuleOptions.jjokPiReward)
+        : [];
+      await this.repositionCaptured(playerId);
+      if (transferred.length > 0) {
+        await this.repositionCaptured(opponentId);
+        this.eventBus.emit('CAPTURE_UPDATED', {
+          playerId: opponentId,
+          total: this.gameState[opponentId].captured,
+        });
+      }
       this.eventBus.emit('CARD_CAPTURED', {
         playerId,
-        captured: match.captured,
+        captured: [...match.captured, ...transferred],
         total: (playerId === 'player' ? this.gameState.player : this.gameState.cpu).captured,
       });
+      if (match.type === 'jjok') {
+        this.eventBus.emit('JJOK', {
+          playerId,
+          captured: match.captured,
+          transferredPi: transferred,
+        });
+        const playerName = playerId === 'player' ? '플레이어' : '상대방';
+        const reward = transferred.length > 0 ? ` 피 ${transferred.length}장 회수!` : '';
+        this.eventBus.emit('STATUS_MESSAGE', `${playerName} 쪽! 손패와 더미패를 함께 가져옵니다.${reward}`);
+        await this.delay(650);
+      }
     } else {
       // No match: played card is left on the floor
       const mesh = this.cardMeshes.get(match.playedCard.id)!;
@@ -361,6 +383,15 @@ export class Game {
     // Rearrange floor cards neatly
     this.repositionFloor();
     this.gameState.validateInvariants();
+  }
+
+  private async repositionCaptured(playerId: 'player' | 'cpu'): Promise<void> {
+    const captured = this.gameState[playerId].captured;
+    await Promise.all(captured.map((card) => {
+      const mesh = this.cardMeshes.get(card.id)!;
+      mesh.setDisplayScale(0.55);
+      return this.animator.moveTo(mesh, this.getCapturedPosition(playerId, card, 0), 0, true, 260);
+    }));
   }
 
   private async finishTurn(): Promise<void> {

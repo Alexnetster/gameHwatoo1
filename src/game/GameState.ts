@@ -1,6 +1,6 @@
 import { CardDef, PlayerState } from './types';
 import { createShuffledDeck } from './deck';
-import { calculateScore, getCardFamily, SpecialRuleOptions, DEFAULT_SPECIAL_RULE_OPTIONS } from './rules';
+import { calculateScore, getCardFamily, RuleOptions, DEFAULT_SPECIAL_RULE_OPTIONS } from './rules';
 
 export type GamePhase =
   | 'IDLE'
@@ -46,7 +46,11 @@ export class GameState {
   public pendingDrawCard: CardDef | null = null;
   public pendingChoiceCandidates: CardDef[] = [];
   public turnCapturedCards: CardDef[] = []; // Cards captured in the current turn
-  public specialRuleOptions: SpecialRuleOptions = { ...DEFAULT_SPECIAL_RULE_OPTIONS };
+  public specialRuleOptions: RuleOptions;
+
+  constructor(ruleOptions: Partial<RuleOptions> = {}) {
+    this.specialRuleOptions = { ...DEFAULT_SPECIAL_RULE_OPTIONS, ...ruleOptions };
+  }
 
   public initNewGame(random: () => number = Math.random): {
     playerHand: CardDef[];

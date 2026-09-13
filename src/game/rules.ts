@@ -1,13 +1,13 @@
 import { CardDef } from './types';
 
-export type MatchResultType = 'none' | 'single' | 'choice' | 'triple' | 'dadak';
+export type MatchResultType = 'none' | 'single' | 'choice' | 'triple' | 'dadak' | 'jjok';
 
 export interface MatchResult {
   type: MatchResultType;
   playedCard: CardDef;
   captured: CardDef[];
   candidates?: CardDef[]; // When type === 'choice'
-  drawnCard?: CardDef; // The deck card included in a dadak capture
+  drawnCard?: CardDef; // The deck card included in a dadak or jjok capture
   remainingOnFloor: CardDef[];
 }
 
@@ -16,9 +16,15 @@ export interface SpecialRuleOptions {
   seolsaPiReward: 0 | 1 | 2;
 }
 
-export const DEFAULT_SPECIAL_RULE_OPTIONS: SpecialRuleOptions = {
+export interface RuleOptions extends SpecialRuleOptions {
+  /** Number of physical pi cards to take from the opponent on jjok. */
+  jjokPiReward: 0 | 1 | 2;
+}
+
+export const DEFAULT_SPECIAL_RULE_OPTIONS: RuleOptions = {
   seolsaEnabled: true,
   seolsaPiReward: 0,
+  jjokPiReward: 0,
 };
 
 export function validateMatchResult(result: MatchResult): void {
@@ -37,18 +43,48 @@ export function validateMatchResult(result: MatchResult): void {
   if (result.type === 'dadak' && result.captured.length !== 4) {
     throw new Error(`A dadak match must capture exactly 4 cards, got ${result.captured.length}`);
   }
-  if (result.type === 'dadak') {
+  if (result.type === 'jjok' && result.captured.length !== 2) {
+    throw new Error(`A jjok match must capture exactly 2 cards, got ${result.captured.length}`);
+  }
+  if (result.type === 'dadak' || result.type === 'jjok') {
     if (!result.drawnCard || !result.captured.some((card) => card.id === result.drawnCard!.id)) {
-      throw new Error('A dadak match must include the drawn card in captured cards');
+      throw new Error(`A ${result.type} match must include the drawn card in captured cards`);
     }
+  }
+  if (result.type === 'jjok' && (
+    result.drawnCard!.id === result.playedCard.id ||
+    getCardFamily(result.drawnCard!) !== getCardFamily(result.playedCard)
+  )) {
+    throw new Error('A jjok match requires distinct hand and drawn cards of the same family');
   }
 
   if (
-    (result.type === 'single' || result.type === 'triple' || result.type === 'dadak') &&
+    (result.type === 'single' || result.type === 'triple' || result.type === 'dadak' || result.type === 'jjok') &&
     !result.captured.some((card) => card.id === result.playedCard.id)
   ) {
     throw new Error(`${result.type} match must include the played card in captured cards`);
   }
+}
+
+/** 쪽: the hand and deck cards pair with each other, with no initial floor match. */
+export function evaluateJjokMatch(
+  playedCard: CardDef,
+  floorCards: CardDef[],
+  drawnCard: CardDef,
+): MatchResult | null {
+  if (findFloorMatches(playedCard, floorCards).length !== 0 ||
+    getCardFamily(drawnCard) !== getCardFamily(playedCard)) {
+    return null;
+  }
+  const result: MatchResult = {
+    type: 'jjok',
+    playedCard,
+    drawnCard,
+    captured: [playedCard, drawnCard],
+    remainingOnFloor: [...floorCards],
+  };
+  validateMatchResult(result);
+  return result;
 }
 
 /**

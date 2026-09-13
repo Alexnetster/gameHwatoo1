@@ -96,9 +96,7 @@ async function bootstrap(): Promise<void> {
     }
   });
 
-  eventBus.on('CARD_CAPTURED', ({ playerId, captured, total }: {
-    playerId: 'player' | 'cpu'; captured: CardDef[]; total: CardDef[];
-  }) => {
+  const updateCapturedUI = (playerId: 'player' | 'cpu', total: CardDef[]): void => {
     const counts = {
       gwang: total.filter((card) => card.category === 'gwang').length,
       animal: total.filter((card) => card.category === 'animal').length,
@@ -113,10 +111,23 @@ async function bootstrap(): Promise<void> {
     }
     const scoreElement = text(`${prefix}-score`);
     if (scoreElement) scoreElement.innerText = score.toString();
+    if (playerId === 'player') updateScorePanel(total);
+  };
+
+  eventBus.on('CAPTURE_UPDATED', ({ playerId, total }: {
+    playerId: 'player' | 'cpu'; total: CardDef[];
+  }) => {
+    updateCapturedUI(playerId, total);
+  });
+
+  eventBus.on('CARD_CAPTURED', ({ playerId, captured, total }: {
+    playerId: 'player' | 'cpu'; captured: CardDef[]; total: CardDef[];
+  }) => {
+    updateCapturedUI(playerId, total);
 
     if (playerId === 'player') {
+      const score = calculateScore(total);
       const breakdown = calculateScoreBreakdown(total);
-      updateScorePanel(total);
       if (!captureNotice || !captureNoticeEnabled) return;
       const reason = breakdown.reasons.length > 0 ? breakdown.reasons.join(' · ') : '아직 점수 조건을 충족하지 않았습니다.';
       const hints = calculateScoreHints(total);

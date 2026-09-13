@@ -14,4 +14,18 @@ describe('GameState initial deal', () => {
     expect(new Set(allCards.map((card) => card.id)).size).toBe(48);
     expect(state.phase).toBe('PLAYER_SELECT');
   });
+
+  it('defaults 쪽 pi recovery to zero and retains configured options between rounds', () => {
+    const defaults = new GameState();
+    const configured = new GameState({ jjokPiReward: 2 });
+
+    expect(defaults.specialRuleOptions.jjokPiReward).toBe(0);
+    expect(configured.specialRuleOptions).toEqual({
+      seolsaEnabled: true, seolsaPiReward: 0, jjokPiReward: 2,
+    });
+    configured.initNewGame(() => 0.5);
+    configured.initNewGame(() => 0.25);
+    expect(configured.specialRuleOptions.jjokPiReward).toBe(2);
+    expect(defaults.specialRuleOptions.jjokPiReward).toBe(0);
+  });
 });
