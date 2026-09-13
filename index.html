@@ -150,6 +150,8 @@
         margin-top: 4px;
       }
       .action-bar .btn { min-height: 34px; }
+      .audio-volume { display: inline-flex; align-items: center; gap: 5px; color: #cbd5e1; font-size: 11px; white-space: nowrap; }
+      .audio-volume input { width: 72px; accent-color: #22C55E; cursor: pointer; }
       .btn {
         background: rgba(255, 255, 255, 0.14);
         color: #f1f5f9;
@@ -464,6 +466,8 @@
           <div class="action-bar" aria-label="점수 안내 설정">
             <button id="btn-score-details" class="btn" type="button" aria-controls="score-panel">점수·룰 보기</button>
             <button id="btn-capture-toggle" class="btn" type="button" aria-pressed="true">획득 안내 켬</button>
+            <button id="btn-audio-toggle" class="btn" type="button" aria-pressed="false">🔊 소리 켬</button>
+            <label class="audio-volume" for="audio-volume">볼륨 <input id="audio-volume" type="range" min="0" max="100" step="1" value="70" aria-label="오디오 볼륨"></label>
           </div>
         </div>
 

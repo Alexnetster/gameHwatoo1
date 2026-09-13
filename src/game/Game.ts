@@ -176,6 +176,7 @@ export class Game {
     const handMesh = this.cardMeshes.get(handCard.id)!;
     const playerName = playerId === 'player' ? '플레이어' : '상대방';
     this.eventBus.emit('STATUS_MESSAGE', `${playerName}가 [${handCard.name}]을 냈습니다.`);
+    this.eventBus.emit('CARD_PLAYED', { playerId, card: handCard });
 
     // 1. Move hand card to center/floor
     await this.animator.moveTo(handMesh, { x: 0, y: -0.2, z: 0.1 }, 0, true, 220);
@@ -232,6 +233,7 @@ export class Game {
     // Move to center and flip face up
     await this.animator.moveTo(deckMesh, { x: 0.8, y: 0, z: 0.15 }, 0, true, 300);
     this.eventBus.emit('STATUS_MESSAGE', `더미에서 [${deckCard.name}] 카드를 뒤집었습니다.`);
+    this.eventBus.emit('DECK_FLIPPED', { playerId, card: deckCard });
     // Keep the revealed card visible long enough for the player to read it.
     await this.delay(650);
 
@@ -325,6 +327,7 @@ export class Game {
     const playerName = playerId === 'player' ? '플레이어' : '상대방';
     const reward = transferred.length > 0 ? ` 피 ${transferred.length}장 회수` : '';
     this.eventBus.emit('STATUS_MESSAGE', `${playerName} 설사! 같은 월 더미패가 나와 패를 가져오지 못했습니다.${reward}`);
+    this.eventBus.emit('SEOLSA', { playerId, card: deckCard });
 
     const handMesh = this.cardMeshes.get(handCard.id);
     const deckMesh = this.cardMeshes.get(deckCard.id);

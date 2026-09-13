@@ -3,6 +3,7 @@ import { EventBus } from './game/EventBus';
 import { CardDef } from './game/types';
 import { calculateScore, calculateScoreBreakdown, calculateScoreHints } from './game/rules';
 import { AssetManager } from './utils/AssetManager';
+import { AudioManager } from './utils/AudioManager';
 
 async function bootstrap(): Promise<void> {
   const container = document.getElementById('game-container');
@@ -22,6 +23,8 @@ async function bootstrap(): Promise<void> {
   const btnScorePanelClose = document.getElementById('btn-score-panel-close');
   const btnStart = document.getElementById('btn-start');
   const btnRestart = document.getElementById('btn-restart');
+  const audioToggle = document.getElementById('btn-audio-toggle');
+  const audioVolume = document.getElementById('audio-volume') as HTMLInputElement | null;
   let captureNoticeEnabled = localStorage.getItem('hwatu-capture-notice') !== 'off';
   let captureNoticeTimer = 0;
 
@@ -29,6 +32,15 @@ async function bootstrap(): Promise<void> {
 
   const eventBus = EventBus.getInstance();
   const game = new Game(container);
+  const audio = AudioManager.getInstance();
+  audio.bind(eventBus);
+  if (audioToggle) {
+    const updateAudioToggle = () => { audioToggle.innerText = audio.isMuted ? '🔇 음소거' : '🔊 소리 켬'; audioToggle.setAttribute('aria-pressed', String(audio.isMuted)); };
+    if (audioVolume) audioVolume.value = String(Math.round(audio.currentVolume * 100));
+    updateAudioToggle();
+    audioToggle.addEventListener('click', () => { audio.start(); audio.setMuted(!audio.isMuted); updateAudioToggle(); });
+    audioVolume?.addEventListener('input', () => { audio.start(); audio.setVolume(Number(audioVolume.value) / 100); });
+  }
   const text = (id: string): HTMLElement | null => document.getElementById(id);
 
   const updateCaptureToggle = (): void => {
@@ -198,10 +210,12 @@ async function bootstrap(): Promise<void> {
     void game.startNewRound();
   });
   btnStart?.addEventListener('click', () => {
+    audio.start();
     if (startModal) startModal.style.display = 'none';
     void game.startNewRound();
   });
   btnRestart?.addEventListener('click', () => {
+    audio.start();
     if (startModal) startModal.style.display = 'none';
     if (goStopModal) goStopModal.style.display = 'none';
     if (choiceModal) choiceModal.style.display = 'none';
