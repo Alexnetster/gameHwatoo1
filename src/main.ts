@@ -29,6 +29,15 @@ async function bootstrap(): Promise<void> {
   const targetScore = document.getElementById('target-score') as HTMLSelectElement | null;
   const jjokPiReward = document.getElementById('jjok-pi-reward') as HTMLSelectElement | null;
   const seolsaPiReward = document.getElementById('seolsa-pi-reward') as HTMLSelectElement | null;
+  const ruleSettingsKey = 'hwatu-rule-settings';
+  const validOption = (value: string | null, allowed: string[], fallback: string): string =>
+    value !== null && allowed.includes(value) ? value : fallback;
+  try {
+    const saved = JSON.parse(localStorage.getItem(ruleSettingsKey) ?? '{}') as { targetScore?: string; jjokPiReward?: string; seolsaPiReward?: string };
+    if (targetScore) targetScore.value = validOption(saved.targetScore ?? null, ['3', '5', '7'], '3');
+    if (jjokPiReward) jjokPiReward.value = validOption(saved.jjokPiReward ?? null, ['0', '1', '2'], '0');
+    if (seolsaPiReward) seolsaPiReward.value = validOption(saved.seolsaPiReward ?? null, ['0', '1', '2'], '0');
+  } catch { /* storage is optional */ }
   let captureNoticeEnabled = localStorage.getItem('hwatu-capture-notice') !== 'off';
   let captureNoticeTimer = 0;
 
@@ -42,7 +51,12 @@ async function bootstrap(): Promise<void> {
     jjokPiReward: Number(jjokPiReward?.value ?? 0) as 0 | 1 | 2,
     seolsaPiReward: Number(seolsaPiReward?.value ?? 0) as 0 | 1 | 2,
   });
-  const applySelectedRules = () => game.setRuleOptions(getSelectedRules());
+  const applySelectedRules = () => {
+    const rules = getSelectedRules();
+    game.setRuleOptions(rules);
+    try { localStorage.setItem(ruleSettingsKey, JSON.stringify(rules)); } catch { /* storage is optional */ }
+  };
+  [targetScore, jjokPiReward, seolsaPiReward].forEach((select) => select?.addEventListener('change', applySelectedRules));
   const audio = AudioManager.getInstance();
   audio.bind(eventBus);
   if (audioToggle) {
