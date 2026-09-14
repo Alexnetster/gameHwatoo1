@@ -96,9 +96,9 @@
 - Chrome + Playwright: 시작 화면→게임 진입→점수·룰 패널 열기/내용/닫기 및 콘솔 오류 없음
 - P0 오디오 구현: 카드 제출·더미 뒤집기·획득·쪽·설사·GO/STOP·게임 종료 이벤트 효과음 훅, 사용자 제스처 이후 BGM 시도, 음소거·볼륨 localStorage 저장
 - 오디오 독립 검증: `npm test` 46개, `npx tsc --noEmit`, `npm run build` 성공. Chrome + Playwright 390×844·1280×800에서 게임 진입·AudioContext 초기화·음소거/볼륨·reload 복원·가로 오버플로/page error 없음
-- 현재 `public/audio/bgm-main.mp3` 에셋은 없어 재생 실패를 무음 처리하며, 실제 BGM 에셋 추가는 P1로 남김. favicon 404 및 기존 Three.js deprecation 경고는 별도 품질 작업으로 남김
+- 현재 `public/audio/bgm-main.mp3` 에셋은 없어 재생 실패를 무음 처리하며, 실제 BGM 에셋 추가는 P1로 남김. Three.js deprecation 경고는 별도 품질 작업으로 남김
 - 결정적 seed·48장 불변식·최소 룰 옵션 구현: `npm test` 49개, `npx tsc --noEmit`, `npm run build` 성공
-- 독립 자동 검증: 390×844·1280×800에서 `?seed=` 로드, 룰 옵션 선택자, 새 게임 진입, 가로 오버플로·pageerror/requestfailed 없음. 390px에서 기존 favicon 404 1건은 별도 정리 대상
+- 독립 자동 검증: 390×844·1280×800에서 `?seed=` 로드, 룰 옵션 선택자, 새 게임 진입, 가로 오버플로·pageerror/requestfailed 없음. 인라인 favicon을 추가해 favicon 404도 정리함
 - 카드 매칭 후보 강조: `CardMesh.setMatchHighlight()`를 플레이어 손패/더미 선택 대기 흐름에 연결하고, 선택 완료 시 강조를 해제함. 자동 테스트 49개·타입체크·빌드 통과
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
