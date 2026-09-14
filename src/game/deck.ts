@@ -83,3 +83,24 @@ export function createShuffledDeck(random: () => number = Math.random): CardDef[
   }
   return deck;
 }
+
+/**
+ * Creates a small deterministic PRNG for reproducible deal/turn scenarios.
+ * The hash and generator are intentionally self-contained so seeded debug runs
+ * do not depend on a platform-specific RNG implementation.
+ */
+export function createSeededRandom(seed: string | number): () => number {
+  const text = String(seed);
+  let state = 2166136261;
+  for (let index = 0; index < text.length; index++) {
+    state ^= text.charCodeAt(index);
+    state = Math.imul(state, 16777619);
+  }
+
+  return () => {
+    state = (state + 0x6D2B79F5) | 0;
+    let value = Math.imul(state ^ (state >>> 15), 1 | state);
+    value ^= value + Math.imul(value ^ (value >>> 7), 61 | value);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}

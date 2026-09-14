@@ -15,19 +15,29 @@ export class Game {
   private animator: CardAnimator;
   private eventBus: EventBus;
   private gameState: GameState;
+  private readonly random: () => number;
 
   private cardMeshes: Map<string, CardMesh> = new Map();
   private selectedCardMesh: CardMesh | null = null;
   private isProcessingTurn: boolean = false;
 
-  constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}) {
+  constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}, random: () => number = Math.random) {
     this.sceneManager = new SceneManager(container);
     this.interactionManager = new InteractionManager(this.sceneManager, container);
     this.animator = CardAnimator.getInstance();
     this.eventBus = EventBus.getInstance();
     this.gameState = new GameState(ruleOptions);
+    this.random = random;
 
     this.interactionManager.onCardClick(this.handleCardClick.bind(this));
+  }
+
+  public setRuleOptions(ruleOptions: Partial<RuleOptions>): void {
+    this.gameState = new GameState(ruleOptions);
+  }
+
+  public getRuleOptions(): RuleOptions {
+    return { ...this.gameState.specialRuleOptions, targetScore: this.gameState.targetScore };
   }
 
   public async start(): Promise<void> {
@@ -40,7 +50,7 @@ export class Game {
     this.isProcessingTurn = true;
     this.selectedCardMesh = null;
 
-    const { playerHand, cpuHand, floor, deck } = this.gameState.initNewGame();
+    const { playerHand, cpuHand, floor, deck } = this.gameState.initNewGame(this.random);
     this.eventBus.emit('GAME_STARTED', {
       player: this.gameState.player,
       cpu: this.gameState.cpu,
@@ -420,7 +430,7 @@ export class Game {
     const activePlayer = this.gameState.currentTurn === 'player'
       ? this.gameState.player
       : this.gameState.cpu;
-    const canOfferGoStop = activePlayer.score >= 3 && (
+    const canOfferGoStop = activePlayer.score >= this.gameState.targetScore && (
       activePlayer.goCount === 0 || activePlayer.score > activePlayer.scoreAtLastGo
     );
     if (canOfferGoStop) {

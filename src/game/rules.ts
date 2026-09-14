@@ -17,6 +17,8 @@ export interface SpecialRuleOptions {
 }
 
 export interface RuleOptions extends SpecialRuleOptions {
+  /** Score at which GO/STOP becomes available. */
+  targetScore?: 3 | 5 | 7;
   /** Number of physical pi cards to take from the opponent on jjok. */
   jjokPiReward: 0 | 1 | 2;
 }

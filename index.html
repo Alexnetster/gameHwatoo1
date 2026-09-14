@@ -354,6 +354,9 @@
       }
       .start-dialog h1 { margin-bottom: 10px; font-size: 28px; }
       .start-dialog p { margin-bottom: 22px; color: #CBD5E1; }
+      .rule-options { display: grid; gap: 10px; margin: 0 0 22px; text-align: left; }
+      .rule-options label { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #CBD5E1; font-size: 13px; }
+      .rule-options select { min-width: 116px; padding: 7px 8px; color: #F8FAFC; background: #24352A; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; }
       #btn-start { min-width: 180px; min-height: 46px; background: #22C55E; color: #052E16; }
       .result-dialog {
         width: min(390px, 100%);
@@ -477,6 +480,11 @@
         <div class="start-dialog">
           <h1>모바일 맞고</h1>
           <p>카드를 모아 먼저 점수를 올려보세요.</p>
+          <div class="rule-options" aria-label="게임 룰 설정">
+            <label for="target-score">목표 점수 <select id="target-score"><option value="3">3점</option><option value="5">5점</option><option value="7">7점</option></select></label>
+            <label for="jjok-pi-reward">쪽 피 회수 <select id="jjok-pi-reward"><option value="0">없음</option><option value="1">1장</option><option value="2">2장</option></select></label>
+            <label for="seolsa-pi-reward">설사 피 회수 <select id="seolsa-pi-reward"><option value="0">없음</option><option value="1">1장</option><option value="2">2장</option></select></label>
+          </div>
           <button id="btn-start" class="btn">새 게임 시작</button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GameState } from './GameState';
+import { GameState, validateCardZoneInvariants } from './GameState';
+import { createSeededRandom } from './deck';
 
 describe('GameState initial deal', () => {
   it('deals 10/10/8/20 and preserves all 48 unique cards', () => {
@@ -13,6 +14,46 @@ describe('GameState initial deal', () => {
     expect(deal.deck).toHaveLength(20);
     expect(new Set(allCards.map((card) => card.id)).size).toBe(48);
     expect(state.phase).toBe('PLAYER_SELECT');
+  });
+
+  it('repeats a seeded deal and exposes zone invariants for scenario fixtures', () => {
+    const first = new GameState().initNewGame(createSeededRandom('jjok-fixture'));
+    const second = new GameState().initNewGame(createSeededRandom('jjok-fixture'));
+
+    expect(first.playerHand.map((card) => card.id)).toEqual(second.playerHand.map((card) => card.id));
+    expect(first.cpuHand.map((card) => card.id)).toEqual(second.cpuHand.map((card) => card.id));
+    expect(first.floor.map((card) => card.id)).toEqual(second.floor.map((card) => card.id));
+    expect(first.deck.map((card) => card.id)).toEqual(second.deck.map((card) => card.id));
+    expect(() => validateCardZoneInvariants({
+      playerHand: first.playerHand,
+      cpuHand: first.cpuHand,
+      floorCards: first.floor,
+      deck: first.deck,
+      playerCaptured: [],
+      cpuCaptured: [],
+    })).not.toThrow();
+  });
+
+  it('rejects duplicate cards and invalid month-family metadata', () => {
+    const deal = new GameState().initNewGame(createSeededRandom(7));
+    expect(() => validateCardZoneInvariants({
+      playerHand: [...deal.playerHand, deal.cpuHand[0]],
+      cpuHand: deal.cpuHand,
+      floorCards: deal.floor,
+      deck: deal.deck.slice(1),
+      playerCaptured: [],
+      cpuCaptured: [],
+    })).toThrow('Invalid card state');
+
+    const malformed = { ...deal.playerHand[0], month: deal.playerHand[0].month + 1 };
+    expect(() => validateCardZoneInvariants({
+      playerHand: [malformed, ...deal.playerHand.slice(1)],
+      cpuHand: deal.cpuHand,
+      floorCards: deal.floor,
+      deck: deal.deck,
+      playerCaptured: [],
+      cpuCaptured: [],
+    })).toThrow('metadata mismatch');
   });
 
   it('defaults 쪽 pi recovery to zero and retains configured options between rounds', () => {

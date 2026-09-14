@@ -4,6 +4,7 @@ import { CardDef } from './game/types';
 import { calculateScore, calculateScoreBreakdown, calculateScoreHints } from './game/rules';
 import { AssetManager } from './utils/AssetManager';
 import { AudioManager } from './utils/AudioManager';
+import { createSeededRandom } from './game/deck';
 
 async function bootstrap(): Promise<void> {
   const container = document.getElementById('game-container');
@@ -25,13 +26,23 @@ async function bootstrap(): Promise<void> {
   const btnRestart = document.getElementById('btn-restart');
   const audioToggle = document.getElementById('btn-audio-toggle');
   const audioVolume = document.getElementById('audio-volume') as HTMLInputElement | null;
+  const targetScore = document.getElementById('target-score') as HTMLSelectElement | null;
+  const jjokPiReward = document.getElementById('jjok-pi-reward') as HTMLSelectElement | null;
+  const seolsaPiReward = document.getElementById('seolsa-pi-reward') as HTMLSelectElement | null;
   let captureNoticeEnabled = localStorage.getItem('hwatu-capture-notice') !== 'off';
   let captureNoticeTimer = 0;
 
   if (!container) throw new Error('game-container element not found');
 
   const eventBus = EventBus.getInstance();
-  const game = new Game(container);
+  const debugSeed = new URLSearchParams(window.location.search).get('seed');
+  const game = new Game(container, {}, debugSeed === null ? Math.random : createSeededRandom(debugSeed));
+  const getSelectedRules = () => ({
+    targetScore: Number(targetScore?.value ?? 3) as 3 | 5 | 7,
+    jjokPiReward: Number(jjokPiReward?.value ?? 0) as 0 | 1 | 2,
+    seolsaPiReward: Number(seolsaPiReward?.value ?? 0) as 0 | 1 | 2,
+  });
+  const applySelectedRules = () => game.setRuleOptions(getSelectedRules());
   const audio = AudioManager.getInstance();
   audio.bind(eventBus);
   if (audioToggle) {
@@ -64,7 +75,7 @@ async function bootstrap(): Promise<void> {
       <div class="score-panel-counts">${Object.entries(counts).map(([label, count]) => `<span>${label} <b>${count}</b></span>`).join('')}</div>
       <section class="score-panel-section"><h3>점수 내역</h3><p>${breakdown.reasons.length > 0 ? breakdown.reasons.join(' · ') : '아직 점수 조건을 충족하지 않았습니다.'}</p></section>
       <section class="score-panel-section"><h3>다음 목표</h3><p>${hints.length > 0 ? hints.slice(0, 5).map((hint) => `${hint.label} ${hint.remaining}${hint.label === '목표 점수' ? '점' : '장'} 남음`).join(' · ') : '새로운 점수 목표를 만들어 보세요.'}</p></section>
-      <section class="score-panel-section score-rules"><h3>룰 한눈에 보기</h3><ul><li>광 3장부터 점수 획득 (비광 포함 시 2점)</li><li>열끗·띠는 5장부터, 피는 10장마다 1점</li><li>고도리 3장 = 5점 · 홍단/청단/초단 = 3점</li></ul></section>`;
+      <section class="score-panel-section score-rules"><h3>현재 적용 룰</h3><ul><li>목표 점수 ${game.getRuleOptions().targetScore}점</li><li>쪽 피 회수 ${game.getRuleOptions().jjokPiReward}장 · 설사 피 회수 ${game.getRuleOptions().seolsaPiReward}장</li><li>광 3장부터 점수 획득 · 피는 10장마다 1점</li></ul></section>`;
   };
 
   const setScorePanelOpen = (open: boolean): void => {
@@ -206,16 +217,19 @@ async function bootstrap(): Promise<void> {
     void game.resolveGoStop('stop');
   });
   text('btn-result-restart')?.addEventListener('click', () => {
+    applySelectedRules();
     if (resultModal) resultModal.style.display = 'none';
     void game.startNewRound();
   });
   btnStart?.addEventListener('click', () => {
     audio.start();
+    applySelectedRules();
     if (startModal) startModal.style.display = 'none';
     void game.startNewRound();
   });
   btnRestart?.addEventListener('click', () => {
     audio.start();
+    applySelectedRules();
     if (startModal) startModal.style.display = 'none';
     if (goStopModal) goStopModal.style.display = 'none';
     if (choiceModal) choiceModal.style.display = 'none';

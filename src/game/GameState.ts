@@ -2,6 +2,44 @@ import { CardDef, PlayerState } from './types';
 import { createShuffledDeck } from './deck';
 import { calculateScore, getCardFamily, RuleOptions, DEFAULT_SPECIAL_RULE_OPTIONS } from './rules';
 
+export type CardZones = {
+  playerHand: CardDef[];
+  cpuHand: CardDef[];
+  floorCards: CardDef[];
+  deck: CardDef[];
+  playerCaptured: CardDef[];
+  cpuCaptured: CardDef[];
+};
+
+/** Throws when the full 48-card deck is not conserved across game zones. */
+export function validateCardZoneInvariants(zones: CardZones): void {
+  const cards = [
+    ...zones.playerHand,
+    ...zones.cpuHand,
+    ...zones.floorCards,
+    ...zones.deck,
+    ...zones.playerCaptured,
+    ...zones.cpuCaptured,
+  ];
+  const ids = new Set(cards.map((card) => card.id));
+  const familyCounts = new Map<number, number>();
+  for (const card of cards) {
+    const family = getCardFamily(card);
+    familyCounts.set(family, (familyCounts.get(family) ?? 0) + 1);
+    if (card.month !== family) {
+      throw new Error(`Card metadata mismatch: ${card.id} says month ${card.month}`);
+    }
+  }
+  if (
+    cards.length !== 48 ||
+    ids.size !== 48 ||
+    familyCounts.size !== 12 ||
+    [...familyCounts.values()].some((count) => count !== 4)
+  ) {
+    throw new Error(`Invalid card state: ${cards.length} cards in ${ids.size} unique ids`);
+  }
+}
+
 export type GamePhase =
   | 'IDLE'
   | 'DEALING'
@@ -47,9 +85,12 @@ export class GameState {
   public pendingChoiceCandidates: CardDef[] = [];
   public turnCapturedCards: CardDef[] = []; // Cards captured in the current turn
   public specialRuleOptions: RuleOptions;
+  public targetScore: 3 | 5 | 7;
 
   constructor(ruleOptions: Partial<RuleOptions> = {}) {
-    this.specialRuleOptions = { ...DEFAULT_SPECIAL_RULE_OPTIONS, ...ruleOptions };
+    const { targetScore = 3, ...specialRules } = ruleOptions;
+    this.targetScore = targetScore;
+    this.specialRuleOptions = { ...DEFAULT_SPECIAL_RULE_OPTIONS, ...specialRules };
   }
 
   public initNewGame(random: () => number = Math.random): {
@@ -101,31 +142,14 @@ export class GameState {
 
   /** Throws when a card is duplicated or lost between game zones. */
   public validateInvariants(): void {
-    const zones = [
-      ...this.player.hand,
-      ...this.cpu.hand,
-      ...this.floorCards,
-      ...this.deck,
-      ...this.player.captured,
-      ...this.cpu.captured,
-    ];
-    const ids = new Set(zones.map((card) => card.id));
-    const familyCounts = new Map<number, number>();
-    for (const card of zones) {
-      const family = getCardFamily(card);
-      familyCounts.set(family, (familyCounts.get(family) ?? 0) + 1);
-      if (card.month !== family) {
-        throw new Error(`Card metadata mismatch: ${card.id} says month ${card.month}`);
-      }
-    }
-    if (
-      zones.length !== 48 ||
-      ids.size !== 48 ||
-      familyCounts.size !== 12 ||
-      [...familyCounts.values()].some((count) => count !== 4)
-    ) {
-      throw new Error(`Invalid card state: ${zones.length} cards in ${ids.size} unique ids`);
-    }
+    validateCardZoneInvariants({
+      playerHand: this.player.hand,
+      cpuHand: this.cpu.hand,
+      floorCards: this.floorCards,
+      deck: this.deck,
+      playerCaptured: this.player.captured,
+      cpuCaptured: this.cpu.captured,
+    });
   }
 
   public drawCardFromDeck(): CardDef | null {

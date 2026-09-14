@@ -77,6 +77,18 @@ afterEach(() => {
 });
 
 describe('Game turn flow', () => {
+  it('uses an injected random source for deterministic rounds', async () => {
+    const first = new Game({} as HTMLElement, {}, () => 0.5);
+    const second = new Game({} as HTMLElement, {}, () => 0.5);
+    const firstDeal = first['gameState'].initNewGame(first['random']);
+    const secondDeal = second['gameState'].initNewGame(second['random']);
+
+    expect(firstDeal.playerHand.map((card) => card.id)).toEqual(secondDeal.playerHand.map((card) => card.id));
+    expect(firstDeal.cpuHand.map((card) => card.id)).toEqual(secondDeal.cpuHand.map((card) => card.id));
+    expect(firstDeal.floor.map((card) => card.id)).toEqual(secondDeal.floor.map((card) => card.id));
+    expect(firstDeal.deck.map((card) => card.id)).toEqual(secondDeal.deck.map((card) => card.id));
+  });
+
   it('captures a hand match and a different draw match, then advances to CPU', async () => {
     const state = stateWith(['01_01'], ['12_01'], ['01_02', '02_02'], ['02_01']);
     const { game, playPlayer, emit } = gameWith(state);

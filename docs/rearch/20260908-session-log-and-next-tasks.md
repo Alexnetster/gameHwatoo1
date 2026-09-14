@@ -63,14 +63,14 @@
 1. 시작 화면 → 카드 배분 → 손패 선택 → 바닥/더미 매칭 → 턴 전환 → GO/STOP → 라운드 종료의 기본 흐름을 실제 화면에서 검증한다.
 2. 카드 놓기·뒤집기·획득·쪽·설사·GO/STOP에 기본 효과음과 상태 안내를 연결한다.
 3. 사용자 제스처 이후 BGM 재생, 음소거·볼륨 조절, 오디오 미지원/재생 실패 fallback을 추가한다.
-4. 쪽·따닥·설사·후보 선택을 Playwright에서 재현할 수 있는 테스트용 seed 또는 디버그 진입점을 마련한다.
-5. 모든 기본 흐름에서 손패·바닥·더미·획득패 합계 48장과 중복 없음 검증을 완료 처리한다.
+4. 완료: `?seed=<값>` 기반 결정적 배분과 테스트용 RNG 주입으로 쪽·따닥·설사·후보 선택 재현 기반을 마련한다.
+5. 완료: `validateCardZoneInvariants`로 손패·바닥·더미·획득패 합계 48장, 고유 ID, 월별 4장, 카드 메타데이터를 검증한다.
 6. 390×844와 데스크톱 1280×800에서 화면 잘림·입력 잠김·콘솔 오류 없는지 고정 검증한다.
 
 ### P1: 기본 UX 다듬기
 
-1. 게임 시작 화면에 목표 점수와 피 회수량 등 최소 룰 옵션을 배치한다.
-2. 점수·룰 바텀시트를 현재 `RuleOptions`와 연결한다.
+1. 완료: 게임 시작 화면에 목표 점수와 쪽·설사 피 회수량 최소 룰 옵션을 배치한다.
+2. 완료: 점수·룰 바텀시트를 현재 `RuleOptions`와 연결한다.
 3. 카드 선택·매칭 후보·획득 결과의 시각 효과와 상태 문구를 통일한다.
 4. 16:9·9:16 중심으로 카드 좌표와 안전 영역을 조정하고, 이후 4:3·3:4를 추가한다.
 5. BGM·효과음 에셋을 `public/audio/`에 정리하고 라이선스와 출처를 기록한다.
@@ -97,6 +97,8 @@
 - P0 오디오 구현: 카드 제출·더미 뒤집기·획득·쪽·설사·GO/STOP·게임 종료 이벤트 효과음 훅, 사용자 제스처 이후 BGM 시도, 음소거·볼륨 localStorage 저장
 - 오디오 독립 검증: `npm test` 46개, `npx tsc --noEmit`, `npm run build` 성공. Chrome + Playwright 390×844·1280×800에서 게임 진입·AudioContext 초기화·음소거/볼륨·reload 복원·가로 오버플로/page error 없음
 - 현재 `public/audio/bgm-main.mp3` 에셋은 없어 재생 실패를 무음 처리하며, 실제 BGM 에셋 추가는 P1로 남김. favicon 404 및 기존 Three.js deprecation 경고는 별도 품질 작업으로 남김
+- 결정적 seed·48장 불변식·최소 룰 옵션 구현: `npm test` 49개, `npx tsc --noEmit`, `npm run build` 성공
+- 독립 자동 검증: 390×844·1280×800에서 `?seed=` 로드, 룰 옵션 선택자, 새 게임 진입, 가로 오버플로·pageerror/requestfailed 없음. 390px에서 기존 favicon 404 1건은 별도 정리 대상
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`
