@@ -8,6 +8,8 @@ export class AudioManager {
   private readonly storageKey = 'hwatu-audio-settings';
   private audioContext: AudioContext | null = null;
   private bgm: HTMLAudioElement | null = null;
+  private bgmPlaybackFailed = false;
+  private fallbackBgm: { oscillators: OscillatorNode[]; gain: GainNode } | null = null;
   private muted = false;
   private volume = 0.7;
 
@@ -34,18 +36,26 @@ export class AudioManager {
       this.bgm.preload = 'auto';
       this.bgm.volume = this.volume;
     }
-    if (!this.muted) void this.bgm.play().catch(() => { /* absent asset/autoplay failure is harmless */ });
+    if (!this.muted) {
+      void this.bgm.play().catch(() => {
+        this.bgmPlaybackFailed = true;
+        this.startFallbackBgm();
+      });
+    }
   }
 
   public setMuted(muted: boolean): void {
     this.muted = muted;
     if (this.bgm) this.bgm.muted = muted;
+    if (muted) this.stopFallbackBgm();
+    else if (this.audioContext && this.bgmPlaybackFailed) this.startFallbackBgm();
     this.persist();
   }
 
   public setVolume(volume: number): void {
     this.volume = Math.max(0, Math.min(1, volume));
     if (this.bgm) this.bgm.volume = this.volume;
+    if (this.fallbackBgm) this.fallbackBgm.gain.gain.value = this.volume * 0.018;
     this.persist();
   }
 
@@ -94,6 +104,36 @@ export class AudioManager {
     const Context = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Context) return null;
     try { this.audioContext = new Context(); return this.audioContext; } catch { return null; }
+  }
+
+  private startFallbackBgm(): void {
+    if (this.muted || this.fallbackBgm) return;
+    const context = this.ensureContext();
+    if (!context) return;
+    try {
+      const gain = context.createGain();
+      gain.gain.value = this.volume * 0.018;
+      gain.connect(context.destination);
+      const oscillators = [110, 165].map((frequency) => {
+        const oscillator = context.createOscillator();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = frequency;
+        oscillator.connect(gain);
+        oscillator.start();
+        return oscillator;
+      });
+      this.fallbackBgm = { oscillators, gain };
+    } catch { /* Web Audio is an enhancement only */ }
+  }
+
+  private stopFallbackBgm(): void {
+    if (!this.fallbackBgm) return;
+    for (const oscillator of this.fallbackBgm.oscillators) {
+      try { oscillator.stop(); } catch { /* already stopped */ }
+      oscillator.disconnect();
+    }
+    this.fallbackBgm.gain.disconnect();
+    this.fallbackBgm = null;
   }
 
   private persist(): void {
