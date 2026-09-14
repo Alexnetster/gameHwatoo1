@@ -101,6 +101,7 @@
 - 독립 자동 검증: 390×844·1280×800에서 `?seed=` 로드, 룰 옵션 선택자, 새 게임 진입, 가로 오버플로·pageerror/requestfailed 없음. 인라인 favicon을 추가해 favicon 404도 정리함
 - 카드 매칭 후보 강조: `CardMesh.setMatchHighlight()`를 플레이어 손패/더미 선택 대기 흐름에 연결하고, 선택 완료 시 강조를 해제함. 자동 테스트 49개·타입체크·빌드 통과
 - 최소 룰 옵션 설정은 `hwatu-rule-settings`로 저장하며, 새로고침 시 유효하지 않은 값은 기본값으로 복원함
+- 좁은 화면에서 오디오 컨트롤과 획득 안내가 줄바꿈·safe-area를 사용하도록 반응형 CSS를 보강함. 실제 화면 체감 확인은 사용자 검증 항목으로 유지
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`

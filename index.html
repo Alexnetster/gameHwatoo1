@@ -146,6 +146,7 @@
       .action-bar {
         pointer-events: auto;
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
         gap: 8px;
         margin-top: 4px;
@@ -265,6 +266,8 @@
         bottom: 92px;
         z-index: 45;
         display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         align-items: center;
         gap: 8px;
         padding: 8px 12px;
@@ -276,6 +279,7 @@
         transform: translate(-50%, 12px);
         pointer-events: none;
         transition: opacity .18s ease, transform .18s ease;
+        max-width: calc(100vw - 16px);
       }
       #capture-notice.visible { opacity: 1; transform: translate(-50%, 0); }
       #capture-notice img { width: 28px; height: 46px; object-fit: contain; }
@@ -408,6 +412,10 @@
         .tag { padding: 2px 4px; }
         .status-banner { font-size: 11px; max-width: min(300px, 92vw); }
         .btn { min-height: 36px; padding: 6px 14px; }
+        .action-bar { gap: 5px; width: 100%; }
+        .action-bar .btn { flex: 0 1 auto; }
+        .audio-volume { flex: 0 1 150px; justify-content: center; }
+        #capture-notice { bottom: calc(92px + env(safe-area-inset-bottom)); }
       }
       @media (orientation: landscape) and (max-height: 520px) {
         .ui-top { padding-top: 5px; }
