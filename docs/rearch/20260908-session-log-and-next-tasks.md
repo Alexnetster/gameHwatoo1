@@ -71,7 +71,7 @@
 
 1. 완료: 게임 시작 화면에 목표 점수와 쪽·설사 피 회수량 최소 룰 옵션을 배치한다.
 2. 완료: 점수·룰 바텀시트를 현재 `RuleOptions`와 연결한다.
-3. 카드 선택·매칭 후보·획득 결과의 시각 효과와 상태 문구를 통일한다.
+3. 진행 중: 손패 선택 표현과 매칭 후보 바닥패 강조를 연결했다. 획득 결과 전체 시각 효과와 상태 문구 통일은 사용자 화면 확인 후 보완한다.
 4. 16:9·9:16 중심으로 카드 좌표와 안전 영역을 조정하고, 이후 4:3·3:4를 추가한다.
 5. BGM·효과음 에셋을 `public/audio/`에 정리하고 라이선스와 출처를 기록한다.
 
@@ -99,6 +99,7 @@
 - 현재 `public/audio/bgm-main.mp3` 에셋은 없어 재생 실패를 무음 처리하며, 실제 BGM 에셋 추가는 P1로 남김. favicon 404 및 기존 Three.js deprecation 경고는 별도 품질 작업으로 남김
 - 결정적 seed·48장 불변식·최소 룰 옵션 구현: `npm test` 49개, `npx tsc --noEmit`, `npm run build` 성공
 - 독립 자동 검증: 390×844·1280×800에서 `?seed=` 로드, 룰 옵션 선택자, 새 게임 진입, 가로 오버플로·pageerror/requestfailed 없음. 390px에서 기존 favicon 404 1건은 별도 정리 대상
+- 카드 매칭 후보 강조: `CardMesh.setMatchHighlight()`를 플레이어 손패/더미 선택 대기 흐름에 연결하고, 선택 완료 시 강조를 해제함. 자동 테스트 49개·타입체크·빌드 통과
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`

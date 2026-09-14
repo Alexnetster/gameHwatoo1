@@ -176,6 +176,13 @@ export class Game {
     });
   }
 
+  private highlightChoiceCandidates(candidates: CardDef[]): void {
+    const candidateIds = new Set(candidates.map((card) => card.id));
+    this.gameState.floorCards.forEach((card) => {
+      this.cardMeshes.get(card.id)?.setMatchHighlight(candidateIds.has(card.id));
+    });
+  }
+
   // Turn execution: Hand card play -> Match -> Deck draw -> Match -> Check end -> Next turn
   private async executeTurn(playerId: 'player' | 'cpu', handCard: CardDef): Promise<void> {
     this.isProcessingTurn = true;
@@ -207,6 +214,7 @@ export class Game {
         this.gameState.phase = 'PLAYER_CHOICE';
         this.gameState.pendingHandCard = handCard;
         this.gameState.pendingChoiceCandidates = handMatch.candidates!;
+        this.highlightChoiceCandidates(handMatch.candidates!);
         this.eventBus.emit('CHOICE_REQUIRED', {
           card: handCard,
           candidates: handMatch.candidates!,
@@ -283,6 +291,7 @@ export class Game {
         this.gameState.phase = 'PLAYER_DRAW_CHOICE';
         this.gameState.pendingDrawCard = deckCard;
         this.gameState.pendingChoiceCandidates = deckMatch.candidates!;
+        this.highlightChoiceCandidates(deckMatch.candidates!);
         this.eventBus.emit('CHOICE_REQUIRED', {
           card: deckCard,
           candidates: deckMatch.candidates!,
@@ -307,6 +316,7 @@ export class Game {
 
     if (this.gameState.phase === 'PLAYER_CHOICE') {
       const handCard = this.gameState.pendingHandCard!;
+      this.clearSelection();
       this.gameState.pendingHandCard = null;
       this.gameState.pendingChoiceCandidates = [];
 
@@ -316,6 +326,7 @@ export class Game {
       await this.executeDeckDraw('player', handMatch);
     } else if (this.gameState.phase === 'PLAYER_DRAW_CHOICE') {
       const deckCard = this.gameState.pendingDrawCard!;
+      this.clearSelection();
       this.gameState.pendingDrawCard = null;
       this.gameState.pendingChoiceCandidates = [];
 
