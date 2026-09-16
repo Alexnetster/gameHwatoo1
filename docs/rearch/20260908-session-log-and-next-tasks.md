@@ -104,6 +104,8 @@
 - 좁은 화면에서 오디오 컨트롤과 획득 안내가 줄바꿈·safe-area를 사용하도록 반응형 CSS를 보강함. 실제 화면 체감 확인은 사용자 검증 항목으로 유지
 - 반복 플레이 리소스 정리: `CardMesh.dispose()`로 카드 geometry/material을 해제하고, `SceneManager.dispose()`로 resize/render loop/WebGL renderer를 종료하도록 연결함
 - 백그라운드 복귀 안정화: `visibilitychange`·`pagehide`에서 카드 입력을 잠시 막고 `pageshow`에서 복원하며, 페이지 종료 시 게임 리소스를 정리함
+- P0 상태 안정화: 라운드 세대 가드로 재시작 후 이전 비동기 턴 continuation을 차단하고, pending 손패·드로우 카드를 invariant 소유 영역에 포함함. 설사 양측 상태 이벤트와 목표 점수별 힌트도 보완함
+- 배치·반복 정리 보완: 16장 바닥패를 위한 행별 세로 간격, 재시작 시 획득 안내 타이머 초기화, Three.js shadow map deprecation 경고 제거를 적용함. 실제 기기 겹침 검증은 별도 확인 항목으로 유지함
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`

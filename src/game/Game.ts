@@ -585,9 +585,11 @@ export class Game {
     const row = Math.floor(idx / cols);
     const col = idx % cols;
     const spacingX = 0.85;
-    const spacingY = 1.05;
+    const total = Math.max(this.gameState.floorCards.length, idx + 1);
+    const rows = Math.ceil(total / cols);
+    const spacingY = rows >= 4 ? 0.65 : rows >= 3 ? 0.78 : 0.95;
+    const startY = rows >= 4 ? 0.85 : rows >= 3 ? 0.55 : 0.25;
     const startX = -((cols - 1) * spacingX) / 2;
-    const startY = 0.2;
 
     return {
       x: startX + col * spacingX,

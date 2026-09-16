@@ -119,6 +119,8 @@ async function bootstrap(): Promise<void> {
   eventBus.on('GAME_STARTED', () => {
     if (startModal) startModal.style.display = 'none';
     if (resultModal) resultModal.style.display = 'none';
+    window.clearTimeout(captureNoticeTimer);
+    captureNotice?.classList.remove('visible');
     for (const id of ['player-gwang', 'player-animal', 'player-ribbon', 'player-junk', 'cpu-gwang', 'cpu-animal', 'cpu-ribbon', 'cpu-junk', 'player-score', 'cpu-score', 'player-go', 'cpu-go', 'player-multiplier', 'cpu-multiplier']) {
       const element = text(id);
       if (element) element.innerText = id.includes('multiplier') ? '1배' : '0';
