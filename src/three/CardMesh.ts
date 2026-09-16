@@ -100,4 +100,13 @@ export class CardMesh extends THREE.Group {
       this.position.z = 0.01;
     }
   }
+
+  /** Release GPU resources owned by this card before removing it from the scene. */
+  public dispose(): void {
+    this.remove(this.mesh);
+    this.mesh.geometry.dispose();
+    this.frontMaterial.dispose();
+    this.backMaterial.dispose();
+    this.edgeMaterial.dispose();
+  }
 }

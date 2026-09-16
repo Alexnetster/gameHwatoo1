@@ -7,8 +7,14 @@ export class SceneManager {
   public cardContainer: THREE.Group;
   public layoutScale = 1;
   private tableMesh: THREE.Mesh;
+  private readonly container: HTMLElement;
+  private readonly handleResize: () => void;
+  private animationFrameId: number | null = null;
+  private disposed = false;
 
   constructor(container: HTMLElement) {
+    this.container = container;
+    this.handleResize = () => this.onResize(container);
     // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x1B2A22); // Deep modern green table environment
@@ -58,7 +64,7 @@ export class SceneManager {
     this.scene.add(this.cardContainer);
 
     // 7. Resize handling
-    window.addEventListener('resize', () => this.onResize(container));
+    window.addEventListener('resize', this.handleResize);
 
     // 8. Start render loop
     this.render();
@@ -93,7 +99,27 @@ export class SceneManager {
   }
 
   public render = (): void => {
-    requestAnimationFrame(this.render);
+    if (this.disposed) return;
+    this.animationFrameId = requestAnimationFrame(this.render);
     this.renderer.render(this.scene, this.camera);
   };
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    window.removeEventListener('resize', this.handleResize);
+    if (this.animationFrameId !== null) cancelAnimationFrame(this.animationFrameId);
+
+    this.scene.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        object.geometry.dispose();
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => material.dispose());
+      }
+    });
+    this.renderer.dispose();
+    this.renderer.forceContextLoss();
+    this.renderer.domElement.remove();
+    this.container.replaceChildren();
+  }
 }

@@ -102,6 +102,8 @@
 - 카드 매칭 후보 강조: `CardMesh.setMatchHighlight()`를 플레이어 손패/더미 선택 대기 흐름에 연결하고, 선택 완료 시 강조를 해제함. 자동 테스트 49개·타입체크·빌드 통과
 - 최소 룰 옵션 설정은 `hwatu-rule-settings`로 저장하며, 새로고침 시 유효하지 않은 값은 기본값으로 복원함
 - 좁은 화면에서 오디오 컨트롤과 획득 안내가 줄바꿈·safe-area를 사용하도록 반응형 CSS를 보강함. 실제 화면 체감 확인은 사용자 검증 항목으로 유지
+- 반복 플레이 리소스 정리: `CardMesh.dispose()`로 카드 geometry/material을 해제하고, `SceneManager.dispose()`로 resize/render loop/WebGL renderer를 종료하도록 연결함
+- 백그라운드 복귀 안정화: `visibilitychange`·`pagehide`에서 카드 입력을 잠시 막고 `pageshow`에서 복원하며, 페이지 종료 시 게임 리소스를 정리함
 - 문서 기록 커밋: `88c7bca docs: record Combos audio plan and next tasks`
 - `5883301 feat: detect optional seolsa draw event`
 - `4b6c2a3 test: cover selected match candidate`

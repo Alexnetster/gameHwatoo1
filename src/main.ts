@@ -46,6 +46,15 @@ async function bootstrap(): Promise<void> {
   const eventBus = EventBus.getInstance();
   const debugSeed = new URLSearchParams(window.location.search).get('seed');
   const game = new Game(container, {}, debugSeed === null ? Math.random : createSeededRandom(debugSeed));
+  const suspendGame = () => game.setSuspended(true);
+  const resumeGame = () => game.setSuspended(false);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') suspendGame();
+    else resumeGame();
+  });
+  window.addEventListener('pagehide', suspendGame);
+  window.addEventListener('pageshow', resumeGame);
+  window.addEventListener('beforeunload', () => game.dispose(), { once: true });
   const getSelectedRules = () => ({
     targetScore: Number(targetScore?.value ?? 3) as 3 | 5 | 7,
     jjokPiReward: Number(jjokPiReward?.value ?? 0) as 0 | 1 | 2,

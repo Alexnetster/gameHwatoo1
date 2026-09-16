@@ -20,6 +20,8 @@ export class Game {
   private cardMeshes: Map<string, CardMesh> = new Map();
   private selectedCardMesh: CardMesh | null = null;
   private isProcessingTurn: boolean = false;
+  private isSuspended = false;
+  private disposed = false;
 
   constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}, random: () => number = Math.random) {
     this.sceneManager = new SceneManager(container);
@@ -46,6 +48,7 @@ export class Game {
   }
 
   public async startNewRound(): Promise<void> {
+    if (this.disposed || this.isSuspended) return;
     this.clearAllCards();
     this.isProcessingTurn = true;
     this.selectedCardMesh = null;
@@ -115,7 +118,7 @@ export class Game {
 
   // Handle user clicks on cards
   private async handleCardClick(clickedMesh: CardMesh): Promise<void> {
-    if (this.isProcessingTurn) return;
+    if (this.disposed || this.isSuspended || this.isProcessingTurn) return;
 
     try {
 
@@ -650,8 +653,25 @@ export class Game {
   private clearAllCards(): void {
     this.cardMeshes.forEach((mesh) => {
       this.sceneManager.cardContainer.remove(mesh);
+      mesh.dispose();
     });
     this.cardMeshes.clear();
+  }
+
+  public setSuspended(suspended: boolean): void {
+    if (this.disposed || this.isSuspended === suspended) return;
+    this.isSuspended = suspended;
+    this.interactionManager.enabled = !suspended;
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.isSuspended = true;
+    this.interactionManager.enabled = false;
+    this.clearAllCards();
+    this.interactionManager.dispose();
+    this.sceneManager.dispose();
   }
 
   private delay(ms: number): Promise<void> {
