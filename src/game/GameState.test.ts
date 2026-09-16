@@ -56,6 +56,35 @@ describe('GameState initial deal', () => {
     })).toThrow('metadata mismatch');
   });
 
+  it('counts pending hand and drawn cards as owned zones without counting choice references', () => {
+    const state = new GameState();
+    state.initNewGame(createSeededRandom('pending-fixture'));
+    const pendingHandCard = state.player.hand.pop()!;
+    const pendingDrawCard = state.deck.pop()!;
+
+    expect(() => validateCardZoneInvariants({
+      playerHand: state.player.hand,
+      cpuHand: state.cpu.hand,
+      floorCards: state.floorCards,
+      deck: state.deck,
+      playerCaptured: state.player.captured,
+      cpuCaptured: state.cpu.captured,
+      pendingHandCard,
+      pendingDrawCard,
+      // Candidate arrays are references and intentionally not part of zones.
+    })).not.toThrow();
+
+    expect(() => validateCardZoneInvariants({
+      playerHand: state.player.hand,
+      cpuHand: state.cpu.hand,
+      floorCards: state.floorCards,
+      deck: state.deck,
+      playerCaptured: state.player.captured,
+      cpuCaptured: state.cpu.captured,
+      pendingHandCard,
+    })).toThrow('Invalid card state');
+  });
+
   it('defaults 쪽 pi recovery to zero and retains configured options between rounds', () => {
     const defaults = new GameState();
     const configured = new GameState({ jjokPiReward: 2 });

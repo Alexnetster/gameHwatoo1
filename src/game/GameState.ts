@@ -9,6 +9,9 @@ export type CardZones = {
   deck: CardDef[];
   playerCaptured: CardDef[];
   cpuCaptured: CardDef[];
+  /** Cards temporarily removed from an owner's zone while awaiting a choice. */
+  pendingHandCard?: CardDef | null;
+  pendingDrawCard?: CardDef | null;
 };
 
 /** Throws when the full 48-card deck is not conserved across game zones. */
@@ -20,6 +23,8 @@ export function validateCardZoneInvariants(zones: CardZones): void {
     ...zones.deck,
     ...zones.playerCaptured,
     ...zones.cpuCaptured,
+    ...(zones.pendingHandCard ? [zones.pendingHandCard] : []),
+    ...(zones.pendingDrawCard ? [zones.pendingDrawCard] : []),
   ];
   const ids = new Set(cards.map((card) => card.id));
   const familyCounts = new Map<number, number>();
@@ -149,6 +154,8 @@ export class GameState {
       deck: this.deck,
       playerCaptured: this.player.captured,
       cpuCaptured: this.cpu.captured,
+      pendingHandCard: this.pendingHandCard,
+      pendingDrawCard: this.pendingDrawCard,
     });
   }
 
