@@ -152,7 +152,7 @@ export class Game {
     // the turn appear stuck and prevented the draw/capture pipeline from ever
     // running for users who clicked once.
     this.clearSelection();
-    await this.executeTurn('player', clickedMesh.cardDef);
+    await this.executeTurn('player', clickedMesh.cardDef, this.roundGeneration);
     } catch (err) {
       console.error('Error while processing card click:', err);
       this.isProcessingTurn = false;
@@ -192,7 +192,8 @@ export class Game {
   }
 
   // Turn execution: Hand card play -> Match -> Deck draw -> Match -> Check end -> Next turn
-  private async executeTurn(playerId: 'player' | 'cpu', handCard: CardDef): Promise<void> {
+  private async executeTurn(playerId: 'player' | 'cpu', handCard: CardDef, generation: number): Promise<void> {
+    if (!this.isCurrentRound(generation)) return;
     this.isProcessingTurn = true;
 
     this.gameState.removeCardFromHand(playerId, handCard.id);
@@ -205,6 +206,7 @@ export class Game {
 
     // 1. Move hand card to center/floor
     await this.animator.moveTo(handMesh, { x: 0, y: -0.2, z: 0.1 }, 0, true, 220);
+    if (!this.isCurrentRound(generation)) return;
 
     // 2. Evaluate match for hand card
     let handMatch = evaluateCardMatch(handCard, this.gameState.floorCards);
@@ -215,7 +217,7 @@ export class Game {
       // unchanged when the deck family differs.
       const peekedDeckCard = this.gameState.peekDeckCard();
       if (peekedDeckCard && evaluateDadakMatch(handCard, this.gameState.floorCards, peekedDeckCard)) {
-        await this.executeDeckDraw(playerId, handMatch);
+        await this.executeDeckDraw(playerId, handMatch, undefined, generation);
         return;
       }
       if (playerId === 'player') {
@@ -238,10 +240,11 @@ export class Game {
     }
 
     // Defer a single hand match until the deck card is revealed so Seolsa can be detected.
-    await this.executeDeckDraw(playerId, handMatch);
+    await this.executeDeckDraw(playerId, handMatch, undefined, generation);
   }
 
-  private async executeDeckDraw(playerId: 'player' | 'cpu', handMatch: MatchResult, chosenCandidate?: CardDef): Promise<void> {
+  private async executeDeckDraw(playerId: 'player' | 'cpu', handMatch: MatchResult, chosenCandidate?: CardDef, generation = this.roundGeneration): Promise<void> {
+    if (!this.isCurrentRound(generation)) return;
     this.gameState.phase = playerId === 'player' ? 'PLAYER_DRAW' : 'CPU_TURN';
     // Keep the top card in the deck while resolving the hand card. This keeps
     // the 48-card invariant valid until the drawn card is itself resolved.
@@ -258,6 +261,7 @@ export class Game {
 
     // Move to center and flip face up
     await this.animator.moveTo(deckMesh, { x: 0.8, y: 0, z: 0.15 }, 0, true, 300);
+    if (!this.isCurrentRound(generation)) return;
     this.eventBus.emit('STATUS_MESSAGE', `더미에서 [${deckCard.name}] 카드를 뒤집었습니다.`);
     this.eventBus.emit('DECK_FLIPPED', { playerId, card: deckCard });
     // Keep the revealed card visible long enough for the player to read it.
@@ -269,14 +273,14 @@ export class Game {
     if (dadakMatch) {
       this.gameState.drawCardFromDeck();
       await this.applyMatchResult(playerId, dadakMatch);
-      await this.finishTurn();
+      await this.finishTurn(generation);
       return;
     }
 
     if (isSeolsa(handMatch, deckCard, this.gameState.specialRuleOptions)) {
       this.gameState.drawCardFromDeck();
       await this.applySeolsa(playerId, handMatch.playedCard, deckCard);
-      await this.finishTurn();
+      await this.finishTurn(generation);
       return;
     }
 
@@ -285,7 +289,7 @@ export class Game {
     if (jjokMatch) {
       this.gameState.drawCardFromDeck();
       await this.applyMatchResult(playerId, jjokMatch);
-      await this.finishTurn();
+      await this.finishTurn(generation);
       return;
     }
 
@@ -314,7 +318,7 @@ export class Game {
     }
 
     await this.applyMatchResult(playerId, deckMatch);
-    await this.finishTurn();
+    await this.finishTurn(generation);
   }
 
   // When user makes a choice from the UI modal or floor click
@@ -331,7 +335,7 @@ export class Game {
       const handMatch = evaluateCardMatch(handCard, this.gameState.floorCards, chosenCandidate);
 
       // Continue to deck draw
-      await this.executeDeckDraw('player', handMatch);
+      await this.executeDeckDraw('player', handMatch, undefined, this.roundGeneration);
     } else if (this.gameState.phase === 'PLAYER_DRAW_CHOICE') {
       const deckCard = this.gameState.pendingDrawCard!;
       this.clearSelection();
@@ -341,7 +345,7 @@ export class Game {
       const deckMatch = evaluateCardMatch(deckCard, this.gameState.floorCards, chosenCandidate);
       await this.applyMatchResult('player', deckMatch);
 
-      await this.finishTurn();
+      await this.finishTurn(this.roundGeneration);
     }
   }
 
@@ -428,7 +432,8 @@ export class Game {
     }));
   }
 
-  private async finishTurn(): Promise<void> {
+  private async finishTurn(generation = this.roundGeneration): Promise<void> {
+    if (!this.isCurrentRound(generation)) return;
     this.repositionFloor();
 
     // Check game over
@@ -478,7 +483,7 @@ export class Game {
     // If next turn is CPU, trigger AI after natural delay
     if (nextTurn === 'cpu') {
       await this.delay(650);
-      await this.executeCpuTurn();
+      await this.executeCpuTurn(generation);
     }
   }
 
@@ -503,7 +508,7 @@ export class Game {
     this.isProcessingTurn = false;
     if (nextTurn === 'cpu') {
       await this.delay(650);
-      await this.executeCpuTurn();
+      await this.executeCpuTurn(this.roundGeneration);
     }
   }
 
@@ -521,14 +526,16 @@ export class Game {
     this.eventBus.emit('STATUS_MESSAGE', message);
   }
 
-  private async executeCpuTurn(): Promise<void> {
+  private async executeCpuTurn(generation = this.roundGeneration): Promise<void> {
+    if (!this.isCurrentRound(generation)) return;
     if (this.gameState.cpu.hand.length === 0) return;
 
     this.eventBus.emit('STATUS_MESSAGE', '상대방이 생각 중입니다...');
     await this.delay(400);
+    if (!this.isCurrentRound(generation)) return;
 
     const chosenCard = CpuAI.chooseHandCard(this.gameState.cpu.hand, this.gameState.floorCards);
-    await this.executeTurn('cpu', chosenCard);
+    await this.executeTurn('cpu', chosenCard, generation);
   }
 
   private updateTurnUI(): void {
@@ -663,6 +670,10 @@ export class Game {
       mesh.dispose();
     });
     this.cardMeshes.clear();
+  }
+
+  private isCurrentRound(generation: number): boolean {
+    return !this.disposed && generation === this.roundGeneration;
   }
 
   public setSuspended(suspended: boolean): void {
