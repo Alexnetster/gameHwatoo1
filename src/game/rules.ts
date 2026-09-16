@@ -227,7 +227,7 @@ export interface ScoreHint {
 }
 
 /** Reports scoring milestones that are close but not complete yet. */
-export function calculateScoreHints(captured: CardDef[]): ScoreHint[] {
+export function calculateScoreHints(captured: CardDef[], targetScore: 3 | 5 | 7 = 3): ScoreHint[] {
   const hints: ScoreHint[] = [];
   const addHint = (label: string, current: number, target: number): void => {
     if (current < target && target - current <= 2) {
@@ -235,7 +235,7 @@ export function calculateScoreHints(captured: CardDef[]): ScoreHint[] {
     }
   };
 
-  addHint('목표 점수', calculateScore(captured), 3);
+  addHint('목표 점수', calculateScore(captured), targetScore);
   const gwang = captured.filter((card) => card.category === 'gwang').length;
   addHint('광', gwang, 3);
 

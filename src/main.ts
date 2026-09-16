@@ -86,7 +86,7 @@ async function bootstrap(): Promise<void> {
   const updateScorePanel = (captured: CardDef[] = []): void => {
     if (!scorePanelContent) return;
     const breakdown = calculateScoreBreakdown(captured);
-    const hints = calculateScoreHints(captured);
+    const hints = calculateScoreHints(captured, game.getRuleOptions().targetScore);
     const counts = {
       광: captured.filter((card) => card.category === 'gwang').length,
       열끗: captured.filter((card) => card.category === 'animal').length,

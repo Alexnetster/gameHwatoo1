@@ -22,6 +22,7 @@ export class Game {
   private isProcessingTurn: boolean = false;
   private isSuspended = false;
   private disposed = false;
+  private roundGeneration = 0;
 
   constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}, random: () => number = Math.random) {
     this.sceneManager = new SceneManager(container);
@@ -49,6 +50,7 @@ export class Game {
 
   public async startNewRound(): Promise<void> {
     if (this.disposed || this.isSuspended) return;
+    const roundGeneration = ++this.roundGeneration;
     this.clearAllCards();
     this.isProcessingTurn = true;
     this.selectedCardMesh = null;
@@ -85,6 +87,7 @@ export class Game {
       );
     });
     await Promise.all(floorPromises);
+    if (roundGeneration !== this.roundGeneration || this.disposed) return;
 
     // B. CPU hand cards (face-down)
     const cpuPromises: Promise<void>[] = [];
@@ -98,6 +101,7 @@ export class Game {
       );
     });
     await Promise.all(cpuPromises);
+    if (roundGeneration !== this.roundGeneration || this.disposed) return;
 
     // C. Player hand cards (face-up)
     const playerPromises: Promise<void>[] = [];
@@ -111,6 +115,7 @@ export class Game {
       );
     });
     await Promise.all(playerPromises);
+    if (roundGeneration !== this.roundGeneration || this.disposed) return;
 
     this.isProcessingTurn = false;
     this.updateTurnUI();
@@ -352,6 +357,8 @@ export class Game {
     const reward = transferred.length > 0 ? ` 피 ${transferred.length}장 회수` : '';
     this.eventBus.emit('STATUS_MESSAGE', `${playerName} 설사! 같은 월 더미패가 나와 패를 가져오지 못했습니다.${reward}`);
     this.eventBus.emit('SEOLSA', { playerId, card: deckCard });
+    this.eventBus.emit('CAPTURE_UPDATED', { playerId, total: this.gameState[playerId].captured });
+    this.eventBus.emit('CAPTURE_UPDATED', { playerId: opponentId, total: this.gameState[opponentId].captured });
 
     const handMesh = this.cardMeshes.get(handCard.id);
     const deckMesh = this.cardMeshes.get(deckCard.id);

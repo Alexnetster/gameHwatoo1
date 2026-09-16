@@ -179,6 +179,16 @@ describe('Hwatu scoring hints', () => {
       expect.objectContaining({ label: '피', current: 8, target: 10, remaining: 2 }),
     ]));
   });
+
+  it('uses the configured target score instead of always hinting at three points', () => {
+    const hints = calculateScoreHints([
+      card('01_01'), card('03_01'), card('08_01'),
+    ], 5);
+
+    expect(hints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: '목표 점수', current: 3, target: 5, remaining: 2 }),
+    ]));
+  });
 });
 
 describe('Go multiplier', () => {

@@ -49,6 +49,7 @@ export class AudioManager {
     if (this.bgm) this.bgm.muted = muted;
     if (muted) this.stopFallbackBgm();
     else if (this.audioContext && this.bgmPlaybackFailed) this.startFallbackBgm();
+    else if (!muted) this.start();
     this.persist();
   }
 
