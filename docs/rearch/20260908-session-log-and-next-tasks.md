@@ -150,3 +150,9 @@
 - 4:3·3:4 화면과 저사양 기기에서 WebGL context 복구 확인
 - 전체 한국어 문자열의 UTF-8 저장 및 HTML 태그 회귀 검사
 - Three.js deprecation 경고와 renderer 메모리 측정 기준 정리
+
+### 현재 골격 검증 명령
+
+- `npm run dev -- --host 127.0.0.1 --port 5173`로 개발 서버를 실행한다.
+- 별도 터미널에서 `npm run test:browser`를 실행하면 `BROWSER_SMOKE_URL`의 서버를 대상으로 390×844·1280×800 시작/새 게임/캔버스/가로 overflow/page error/request failure를 검사한다.
+- 브라우저 바이너리가 없는 환경에서는 Playwright Chromium 설치를 먼저 수행한다. 카드 클릭과 한 판 완주 검증은 다음 단계에서 이 골격에 추가한다.
