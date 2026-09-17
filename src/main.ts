@@ -91,6 +91,9 @@ async function bootstrap(): Promise<void> {
     audioVolume?.addEventListener('input', () => { audio.start(); audio.setVolume(Number(audioVolume.value) / 100); });
   }
   const text = (id: string): HTMLElement | null => document.getElementById(id);
+  const focusFirstControl = (root: HTMLElement | null): void => {
+    root?.querySelector<HTMLElement>('button, select, input, [tabindex]:not([tabindex="-1"])')?.focus();
+  };
 
   const updateCaptureToggle = (): void => {
     if (!btnCaptureToggle) return;
@@ -230,6 +233,7 @@ async function bootstrap(): Promise<void> {
       choiceCardsContainer.appendChild(item);
     }
     choiceModal.style.display = 'flex';
+    focusFirstControl(choiceModal);
   });
 
   eventBus.on('CHOICE_RESOLVED', () => {
@@ -240,6 +244,7 @@ async function bootstrap(): Promise<void> {
     const scoreLabel = text('go-stop-score');
     if (scoreLabel) scoreLabel.innerText = `${score}점 · ${goCount}고 · 현재 ${2 ** goCount}배`;
     if (goStopModal) goStopModal.style.display = 'flex';
+    focusFirstControl(goStopModal);
   });
 
   eventBus.on('GAME_OVER', ({ message, playerScore, cpuScore, playerFinalScore, cpuFinalScore }: { message?: string; playerScore?: number; cpuScore?: number; playerFinalScore?: number; cpuFinalScore?: number }) => {
@@ -249,6 +254,7 @@ async function bootstrap(): Promise<void> {
     if (resultMessage) resultMessage.innerText = message ?? '게임이 종료되었습니다.';
     if (resultScores) resultScores.innerText = `나 ${playerFinalScore ?? playerScore ?? 0}점 · CPU ${cpuFinalScore ?? cpuScore ?? 0}점 (기본 ${playerScore ?? 0} / ${cpuScore ?? 0})`;
     if (resultModal) resultModal.style.display = 'flex';
+    focusFirstControl(resultModal);
   });
 
   text('btn-go')?.addEventListener('click', () => {
@@ -286,10 +292,10 @@ async function bootstrap(): Promise<void> {
     if (!captureNoticeEnabled) captureNotice?.classList.remove('visible');
   });
   btnScoreDetails?.addEventListener('click', () => setScorePanelOpen(true));
-  btnScorePanelClose?.addEventListener('click', () => setScorePanelOpen(false));
-  scorePanelOverlay?.addEventListener('click', () => setScorePanelOpen(false));
+  btnScorePanelClose?.addEventListener('click', () => { setScorePanelOpen(false); btnScoreDetails?.focus(); });
+  scorePanelOverlay?.addEventListener('click', () => { setScorePanelOpen(false); btnScoreDetails?.focus(); });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') setScorePanelOpen(false);
+    if (event.key === 'Escape') { setScorePanelOpen(false); btnScoreDetails?.focus(); }
   });
 
   try {
@@ -299,6 +305,7 @@ async function bootstrap(): Promise<void> {
       window.setTimeout(() => { loadingScreen.style.display = 'none'; }, 400);
     }
     if (startModal) startModal.style.display = 'flex';
+    focusFirstControl(startModal);
   } catch (error) {
     console.error('Failed to initialize game:', error);
     if (loadingScreen) loadingScreen.innerHTML = `<p style="color:#ef4444">초기화 실패: ${(error as Error).message}</p>`;
