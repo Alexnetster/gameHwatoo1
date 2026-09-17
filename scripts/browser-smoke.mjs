@@ -1,4 +1,15 @@
 import { chromium } from 'playwright';
+import { stat, truncate } from 'node:fs/promises';
+
+const debugLogPath = new URL('../debug.log', import.meta.url);
+const debugLogMaxBytes = 1 * 1024 * 1024;
+
+try {
+  const debugLog = await stat(debugLogPath);
+  if (debugLog.size >= debugLogMaxBytes) await truncate(debugLogPath, 0);
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 
 const baseUrl = process.env.BROWSER_SMOKE_URL ?? 'http://127.0.0.1:5173';
 const viewports = [
