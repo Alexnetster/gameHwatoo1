@@ -3,10 +3,14 @@ import { stat, truncate } from 'node:fs/promises';
 
 const debugLogPath = new URL('../debug.log', import.meta.url);
 const debugLogMaxBytes = 1 * 1024 * 1024;
+const dateKey = (date) => [date.getFullYear(), date.getMonth() + 1, date.getDate()].join('-');
 
 try {
   const debugLog = await stat(debugLogPath);
-  if (debugLog.size >= debugLogMaxBytes) await truncate(debugLogPath, 0);
+  const isFromPreviousDate = dateKey(debugLog.mtime) !== dateKey(new Date());
+  if (isFromPreviousDate || debugLog.size >= debugLogMaxBytes) {
+    await truncate(debugLogPath, 0);
+  }
 } catch (error) {
   if (error.code !== 'ENOENT') throw error;
 }
