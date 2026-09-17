@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
   const scorePanel = document.getElementById('score-panel');
   const scorePanelOverlay = document.getElementById('score-panel-overlay');
   const scorePanelContent = document.getElementById('score-panel-content');
+  const scorePanelShared = document.getElementById('score-panel-shared');
   const btnScoreDetails = document.getElementById('btn-score-details');
   const btnCaptureToggle = document.getElementById('btn-capture-toggle');
   const btnScorePanelClose = document.getElementById('btn-score-panel-close');
@@ -42,6 +43,7 @@ async function bootstrap(): Promise<void> {
   } catch { /* storage is optional */ }
   let captureNoticeEnabled = localStorage.getItem('hwatu-capture-notice') !== 'off';
   let captureNoticeTimer = 0;
+  const capturedByPlayer: Record<'player' | 'cpu', CardDef[]> = { player: [], cpu: [] };
 
   if (!container) throw new Error('game-container element not found');
 
@@ -101,6 +103,13 @@ async function bootstrap(): Promise<void> {
     btnCaptureToggle.setAttribute('aria-pressed', String(captureNoticeEnabled));
   };
 
+  const updateSharedScore = (): void => {
+    if (!scorePanelShared) return;
+    const playerScore = calculateScore(capturedByPlayer.player);
+    const cpuScore = calculateScore(capturedByPlayer.cpu);
+    scorePanelShared.innerText = `나 ${playerScore}점 · CPU ${cpuScore}점`;
+  };
+
   const updateScorePanel = (captured: CardDef[] = []): void => {
     if (!scorePanelContent) return;
     const breakdown = calculateScoreBreakdown(captured);
@@ -146,6 +155,9 @@ async function bootstrap(): Promise<void> {
       const element = text(id);
       if (element) element.innerText = id.includes('multiplier') ? '1배' : '0';
     }
+    capturedByPlayer.player = [];
+    capturedByPlayer.cpu = [];
+    updateSharedScore();
     updateScorePanel();
     setScorePanelOpen(false);
   });
@@ -166,6 +178,7 @@ async function bootstrap(): Promise<void> {
   });
 
   const updateCapturedUI = (playerId: 'player' | 'cpu', total: CardDef[]): void => {
+    capturedByPlayer[playerId] = [...total];
     const counts = {
       gwang: total.filter((card) => card.category === 'gwang').length,
       animal: total.filter((card) => card.category === 'animal').length,
@@ -180,6 +193,7 @@ async function bootstrap(): Promise<void> {
     }
     const scoreElement = text(`${prefix}-score`);
     if (scoreElement) scoreElement.innerText = score.toString();
+    updateSharedScore();
     if (playerId === 'player') updateScorePanel(total);
   };
 
@@ -199,7 +213,7 @@ async function bootstrap(): Promise<void> {
       const breakdown = calculateScoreBreakdown(total);
       if (!captureNotice || !captureNoticeEnabled) return;
       const reason = breakdown.reasons.length > 0 ? breakdown.reasons.join(' · ') : '아직 점수 조건을 충족하지 않았습니다.';
-      const hints = calculateScoreHints(total);
+       const hints = calculateScoreHints(total, game.getRuleOptions().targetScore);
       const hintText = hints.length > 0
         ? `다음 점수까지: ${hints.slice(0, 5).map((hint) => `${hint.label} ${hint.remaining}${hint.label === '목표 점수' ? '점' : '장'}`).join(' · ')}`
         : '';
