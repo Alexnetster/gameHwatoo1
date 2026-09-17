@@ -50,6 +50,7 @@
 
 ## 사용자 확인 전까지 보류
 
+- [ ] U0. 서로 다른 기기 3인 온라인 방과 4인 이상 광팔기 모드 — 구조 초안은 `20260917-online-3plus-player-architecture.md`에 기록
 - [ ] U1. 실제 BGM/SFX 파일 선정 및 라이선스 확인 — `BLOCKED: USER`
 - [ ] U2. 기본 맞고 외 특수 룰의 출시 포함 범위 — `BLOCKED: USER`
 - [ ] U3. 실기기에서 카드 겹침·터치 영역·safe-area 최종 판정 — `BLOCKED: DEVICE/USER`
