@@ -77,6 +77,24 @@ afterEach(() => {
 });
 
 describe('Game turn flow', () => {
+  it('does not resume a CPU turn after the round generation changes during GO', async () => {
+    const state = stateWith(['12_01'], ['02_01'], [], ['03_01'], {}, { targetScore: 3 });
+    state.player.score = 3;
+    state.phase = 'GO_STOP';
+    state.currentTurn = 'player';
+    const { game } = gameWith(state);
+    let releaseDelay!: () => void;
+    game['delay'] = vi.fn(() => new Promise<void>((resolve) => { releaseDelay = resolve; }));
+
+    const goPromise = game.resolveGoStop('go');
+    await Promise.resolve();
+    game['roundGeneration'] += 1;
+    releaseDelay();
+    await goPromise;
+
+    expect(game['executeCpuTurn']).not.toHaveBeenCalled();
+  });
+
   it('uses an injected random source for deterministic rounds', async () => {
     const first = new Game({} as HTMLElement, {}, () => 0.5);
     const second = new Game({} as HTMLElement, {}, () => 0.5);
