@@ -54,7 +54,12 @@ async function bootstrap(): Promise<void> {
   });
   window.addEventListener('pagehide', suspendGame);
   window.addEventListener('pageshow', resumeGame);
-  window.addEventListener('beforeunload', () => game.dispose(), { once: true });
+  let unbindAudio: () => void = () => undefined;
+  window.addEventListener('beforeunload', () => {
+    unbindAudio();
+    audio.suspend();
+    game.dispose();
+  }, { once: true });
   const getSelectedRules = () => ({
     targetScore: Number(targetScore?.value ?? 3) as 3 | 5 | 7,
     jjokPiReward: Number(jjokPiReward?.value ?? 0) as 0 | 1 | 2,
@@ -67,7 +72,15 @@ async function bootstrap(): Promise<void> {
   };
   [targetScore, jjokPiReward, seolsaPiReward].forEach((select) => select?.addEventListener('change', applySelectedRules));
   const audio = AudioManager.getInstance();
-  audio.bind(eventBus);
+  unbindAudio = audio.bind(eventBus);
+  const suspendAudio = () => audio.suspend();
+  const resumeAudio = () => audio.resume();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') suspendAudio();
+    else resumeAudio();
+  });
+  window.addEventListener('pagehide', suspendAudio);
+  window.addEventListener('pageshow', resumeAudio);
   if (audioToggle) {
     const updateAudioToggle = () => { audioToggle.innerText = audio.isMuted ? '🔇 음소거' : '🔊 소리 켬'; audioToggle.setAttribute('aria-pressed', String(audio.isMuted)); };
     if (audioVolume) audioVolume.value = String(Math.round(audio.currentVolume * 100));
@@ -119,6 +132,9 @@ async function bootstrap(): Promise<void> {
   eventBus.on('GAME_STARTED', () => {
     if (startModal) startModal.style.display = 'none';
     if (resultModal) resultModal.style.display = 'none';
+    if (goStopModal) goStopModal.style.display = 'none';
+    if (choiceModal) choiceModal.style.display = 'none';
+    setScorePanelOpen(false);
     window.clearTimeout(captureNoticeTimer);
     captureNotice?.classList.remove('visible');
     for (const id of ['player-gwang', 'player-animal', 'player-ribbon', 'player-junk', 'cpu-gwang', 'cpu-animal', 'cpu-ribbon', 'cpu-junk', 'player-score', 'cpu-score', 'player-go', 'cpu-go', 'player-multiplier', 'cpu-multiplier']) {

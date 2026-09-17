@@ -82,7 +82,7 @@ export class Game {
       const targetPos = this.getFloorPosition(idx);
       floorPromises.push(
         this.delay(idx * 40).then(() =>
-          this.animator.moveTo(mesh, targetPos, (Math.random() - 0.5) * 0.1, true, 260)
+          this.animator.moveTo(mesh, targetPos, this.getVisualTilt(card.id), true, 260)
         )
       );
     });
@@ -488,7 +488,8 @@ export class Game {
   }
 
   public async resolveGoStop(choice: 'go' | 'stop'): Promise<void> {
-    if (this.gameState.phase !== 'GO_STOP') return;
+    if (!this.isCurrentRound(this.roundGeneration) || this.isProcessingTurn || this.gameState.phase !== 'GO_STOP') return;
+    const generation = this.roundGeneration;
     this.isProcessingTurn = true;
     if (choice === 'stop') {
       this.finishRound(`플레이어가 ${this.gameState.player.score}점에서 STOP했습니다.`);
@@ -508,7 +509,8 @@ export class Game {
     this.isProcessingTurn = false;
     if (nextTurn === 'cpu') {
       await this.delay(650);
-      await this.executeCpuTurn(this.roundGeneration);
+      if (!this.isCurrentRound(generation)) return;
+      await this.executeCpuTurn(generation);
     }
   }
 
@@ -596,6 +598,12 @@ export class Game {
       y: startY - row * spacingY,
       z: 0.01 + idx * 0.001,
     };
+  }
+
+  private getVisualTilt(cardId: string): number {
+    let hash = 0;
+    for (const character of cardId) hash = (hash * 31 + character.charCodeAt(0)) | 0;
+    return (((hash >>> 0) % 1000) / 1000 - 0.5) * 0.1;
   }
 
   private getCapturedPosition(playerId: 'player' | 'cpu', card: CardDef, offset: number): { x: number; y: number; z: number } {

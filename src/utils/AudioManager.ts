@@ -44,6 +44,27 @@ export class AudioManager {
     }
   }
 
+  public suspend(): void {
+    if (this.bgm && !this.bgm.paused) this.bgm.pause();
+    this.stopFallbackBgm();
+    if (this.audioContext?.state === 'running') void this.audioContext.suspend().catch(() => undefined);
+  }
+
+  public resume(): void {
+    if (this.muted) return;
+    if (this.audioContext?.state === 'suspended') void this.audioContext.resume().catch(() => undefined);
+    if (this.bgmPlaybackFailed) {
+      this.startFallbackBgm();
+      return;
+    }
+    if (this.bgm) {
+      void this.bgm.play().catch(() => {
+        this.bgmPlaybackFailed = true;
+        this.startFallbackBgm();
+      });
+    }
+  }
+
   public setMuted(muted: boolean): void {
     this.muted = muted;
     if (this.bgm) this.bgm.muted = muted;

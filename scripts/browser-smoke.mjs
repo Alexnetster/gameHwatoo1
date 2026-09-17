@@ -27,6 +27,9 @@ try {
     const page = await browser.newPage({ viewport });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(new Error(`console: ${message.text()}`));
+    });
     page.on('requestfailed', (request) => errors.push(new Error(`${request.url()}: ${request.failure()?.errorText ?? 'request failed'}`)));
 
     await page.goto(`${baseUrl}/?seed=smoke-${viewport.name}`, { waitUntil: 'networkidle' });
@@ -35,6 +38,38 @@ try {
     await page.locator('#btn-start').click();
     await page.locator('#start-modal').waitFor({ state: 'hidden' });
     await page.locator('#game-container canvas').waitFor({ state: 'attached' });
+
+    const scorePanel = page.locator('#score-panel');
+    await page.locator('#btn-score-details').click();
+    await scorePanel.waitFor({ state: 'visible' });
+    if ((await scorePanel.getAttribute('aria-hidden')) !== 'false') {
+      throw new Error(`${viewport.name}: score panel did not become accessible`);
+    }
+    await page.locator('#btn-score-panel-close').click();
+    await page.waitForFunction(() => document.querySelector('#score-panel')?.getAttribute('aria-hidden') === 'true');
+
+    const captureToggle = page.locator('#btn-capture-toggle');
+    const captureBefore = await captureToggle.getAttribute('aria-pressed');
+    await captureToggle.click();
+    if ((await captureToggle.getAttribute('aria-pressed')) === captureBefore) {
+      throw new Error(`${viewport.name}: capture notice toggle did not change state`);
+    }
+
+    const audioToggle = page.locator('#btn-audio-toggle');
+    const audioBefore = await audioToggle.getAttribute('aria-pressed');
+    await audioToggle.click();
+    if ((await audioToggle.getAttribute('aria-pressed')) === audioBefore) {
+      throw new Error(`${viewport.name}: audio toggle did not change state`);
+    }
+
+    await page.locator('#btn-restart').click();
+    await page.waitForTimeout(100);
+    if (await page.locator('#start-modal').isVisible()) {
+      throw new Error(`${viewport.name}: header restart unexpectedly opened start modal`);
+    }
+    if ((await page.locator('#game-container canvas').count()) !== 1) {
+      throw new Error(`${viewport.name}: restart did not preserve one game canvas`);
+    }
 
     const layout = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
