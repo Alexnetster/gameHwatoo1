@@ -30,10 +30,12 @@ async function bootstrap(): Promise<void> {
   const jjokPiReward = document.getElementById('jjok-pi-reward') as HTMLSelectElement | null;
   const seolsaPiReward = document.getElementById('seolsa-pi-reward') as HTMLSelectElement | null;
   const ruleSettingsKey = 'hwatu-rule-settings';
-  const validOption = (value: string | null, allowed: string[], fallback: string): string =>
-    value !== null && allowed.includes(value) ? value : fallback;
+  const validOption = (value: string | number | null, allowed: string[], fallback: string): string => {
+    const normalized = value === null ? null : String(value);
+    return normalized !== null && allowed.includes(normalized) ? normalized : fallback;
+  };
   try {
-    const saved = JSON.parse(localStorage.getItem(ruleSettingsKey) ?? '{}') as { targetScore?: string; jjokPiReward?: string; seolsaPiReward?: string };
+    const saved = JSON.parse(localStorage.getItem(ruleSettingsKey) ?? '{}') as { targetScore?: string | number; jjokPiReward?: string | number; seolsaPiReward?: string | number };
     if (targetScore) targetScore.value = validOption(saved.targetScore ?? null, ['3', '5', '7'], '3');
     if (jjokPiReward) jjokPiReward.value = validOption(saved.jjokPiReward ?? null, ['0', '1', '2'], '0');
     if (seolsaPiReward) seolsaPiReward.value = validOption(saved.seolsaPiReward ?? null, ['0', '1', '2'], '0');

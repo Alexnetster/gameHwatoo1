@@ -35,6 +35,13 @@ try {
     await page.goto(`${baseUrl}/?seed=smoke-${viewport.name}`, { waitUntil: 'networkidle' });
     await page.locator('#loading-screen').waitFor({ state: 'hidden', timeout: 5_000 });
     await page.locator('#start-modal').waitFor({ state: 'visible' });
+    await page.locator('#target-score').selectOption('7');
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.locator('#loading-screen').waitFor({ state: 'hidden', timeout: 5_000 });
+    await page.locator('#start-modal').waitFor({ state: 'visible' });
+    if (await page.locator('#target-score').inputValue() !== '7') {
+      throw new Error(`${viewport.name}: target score setting was not restored (value=${await page.locator('#target-score').inputValue()}, storage=${await page.evaluate(() => localStorage.getItem('hwatu-rule-settings'))})`);
+    }
     await page.locator('#btn-start').click();
     await page.locator('#start-modal').waitFor({ state: 'hidden' });
     await page.locator('#game-container canvas').waitFor({ state: 'attached' });
