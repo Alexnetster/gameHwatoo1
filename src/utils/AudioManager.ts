@@ -1,6 +1,6 @@
 import { EventBus } from '../game/EventBus';
 
-type SoundName = 'card' | 'flip' | 'capture' | 'special' | 'go' | 'stop' | 'win' | 'lose';
+type SoundName = 'card' | 'flip' | 'capture' | 'special' | 'go' | 'stop' | 'win' | 'lose' | 'draw';
 
 /** Small, asset-optional audio layer. Missing files fall back to Web Audio tones. */
 export class AudioManager {
@@ -83,13 +83,13 @@ export class AudioManager {
 
   public play(name: SoundName): void {
     if (this.muted) return;
-    const frequencies: Record<SoundName, number> = { card: 220, flip: 330, capture: 520, special: 660, go: 440, stop: 180, win: 780, lose: 120 };
+    const frequencies: Record<SoundName, number> = { card: 220, flip: 330, capture: 520, special: 660, go: 440, stop: 180, win: 780, lose: 120, draw: 300 };
     const context = this.ensureContext();
     if (!context) return;
     try {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
-      oscillator.type = name === 'stop' || name === 'lose' ? 'triangle' : 'sine';
+      oscillator.type = name === 'stop' || name === 'lose' || name === 'draw' ? 'triangle' : 'sine';
       oscillator.frequency.value = frequencies[name];
       gain.gain.setValueAtTime(Math.min(0.12, this.volume * 0.12), context.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + (name === 'win' ? 0.32 : 0.12));
@@ -111,7 +111,7 @@ export class AudioManager {
       eventBus.on('GAME_OVER', ({ playerFinalScore, cpuFinalScore, playerScore, cpuScore }: { playerFinalScore?: number; cpuFinalScore?: number; playerScore?: number; cpuScore?: number }) => {
         const player = playerFinalScore ?? playerScore ?? 0;
         const cpu = cpuFinalScore ?? cpuScore ?? 0;
-        this.play(player >= cpu ? 'win' : 'lose');
+        this.play(player > cpu ? 'win' : player < cpu ? 'lose' : 'draw');
       }),
     ];
     return () => unsubs.forEach((unsubscribe) => unsubscribe());
