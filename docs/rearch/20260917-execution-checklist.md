@@ -29,7 +29,7 @@
 
 ### Worker A — 저비용 구현 검토
 
-- [ ] A1. Game/EventBus 이벤트 payload와 구독 해제 경계 점검
+- [x] A1. Game/EventBus 이벤트 payload와 구독 해제 경계 점검
 - [x] A2. pending·재시작·GO/STOP 경합 회귀 테스트 추가
 - [ ] A3. 카드 영역·획득 트레이 계산의 invariant 및 resize 테스트 보강
 - [ ] A4. AudioManager fallback·mute·visibility 수명주기 테스트 보강
