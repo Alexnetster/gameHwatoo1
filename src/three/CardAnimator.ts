@@ -56,12 +56,18 @@ export class CardAnimator {
         targetPos: endPos,
         startRot,
         targetRot: endRot,
-        duration: Math.max(durationMs, 10),
+        duration: this.prefersReducedMotion() ? 10 : Math.max(durationMs, 10),
         elapsed: 0,
         easing: this.easeOutCubic,
         resolvePromise: resolve,
       });
     });
+  }
+
+  private prefersReducedMotion(): boolean {
+    return typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   private easeOutCubic(t: number): number {
