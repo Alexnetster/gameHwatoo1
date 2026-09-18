@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 
+export function getLayoutScaleForAspect(aspect: number): number {
+  return aspect < 0.75 ? Math.max(0.68, aspect / 0.75) : 1;
+}
+
 export class SceneManager {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
@@ -80,7 +84,7 @@ export class SceneManager {
       this.camera.position.set(0, -0.2, 8.5);
     }
     // Keep the complete 10-card hand inside the narrowest phone viewport.
-    this.layoutScale = aspect < 0.75 ? Math.max(0.68, aspect / 0.75) : 1;
+    this.layoutScale = getLayoutScaleForAspect(aspect);
     if (this.cardContainer) this.cardContainer.scale.setScalar(this.layoutScale);
     this.camera.lookAt(0, 0, 0);
   }

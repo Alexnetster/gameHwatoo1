@@ -31,7 +31,7 @@
 
 - [x] A1. Game/EventBus 이벤트 payload와 구독 해제 경계 점검
 - [x] A2. pending·재시작·GO/STOP 경합 회귀 테스트 추가
-- [ ] A3. 카드 영역·획득 트레이 계산의 invariant 및 resize 테스트 보강
+- [x] A3. 카드 영역·획득 트레이 계산의 invariant 및 resize 테스트 보강
 - [x] A4. AudioManager fallback·mute·visibility 수명주기 테스트 보강
 
 ### Worker B — 저비용 검증 검토
@@ -39,14 +39,14 @@
 - [x] B1. `npm test`, `npm run build`, `npm run test:browser` 반복 실행
 - [x] B2. 390×844·1280×800 overflow, canvas 중복, 콘솔 오류 확인
 - [x] B3. 룰 설정 저장·reload 복원과 reduced-motion DOM 상태 확인
-- [ ] B4. 사용자 확인 필요 항목과 자동 처리 가능 항목 재분류
+- [x] B4. 사용자 확인 필요 항목과 자동 처리 가능 항목 재분류
 
 ### 현재 세션 통합 작업
 
-- [ ] C1. A/B 결과를 현재 코드와 대조
-- [ ] C2. 결함 발견 시 작은 수정과 회귀 테스트 작성
-- [ ] C3. 통과 단위별 중간 커밋·푸시
-- [ ] C4. 체크리스트와 인계 문서 갱신
+- [x] C1. A/B 결과를 현재 코드와 대조
+- [x] C2. 결함 발견 시 작은 수정과 회귀 테스트 작성
+- [x] C3. 통과 단위별 중간 커밋·푸시
+- [x] C4. 체크리스트와 인계 문서 갱신
 
 ## 사용자 확인 전까지 보류
 
