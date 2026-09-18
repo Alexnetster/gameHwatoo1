@@ -39,10 +39,10 @@ WebRTC를 핵심 게임 통신으로 사용하지 않는다. 카드·주사위·
 
 ### Phase 0 — 규칙 엔진 경계 고정
 
-- [ ] `GameState`, `GameAction`, `GameEvent`, `GameResult` 공통 타입 정의
+- [x] `GameState`, `GameAction`, `GameEvent`, `GameResult` 공통 타입 정의
 - [ ] 게임별 규칙 판정과 Three.js/UI 렌더링 분리
-- [ ] `roomId`, `gameId`, `roundId`, `sequence`, `actorId` 공통 필드 확정
-- [ ] 서버가 결과를 결정하고 클라이언트는 요청·표시만 담당하는 계약 작성
+- [x] `roomId`, `gameId`, `roundId`, `sequence`, `actorId` 공통 필드 확정
+- [x] 서버가 결과를 결정하고 클라이언트는 요청·표시만 담당하는 계약 작성
 - [ ] 48장 고유 카드 invariant와 기존 CPU 흐름 보존
 
 검증: 브라우저 없이 규칙 엔진 테스트로 정상 행동·중복 행동·잘못된 턴·재전송을 검증한다.
