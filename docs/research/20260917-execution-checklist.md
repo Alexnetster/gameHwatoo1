@@ -25,6 +25,16 @@
 - [x] 무승부 전용 오디오 분기
 - [x] 플레이어·CPU 점수를 상세 패널에서도 함께 표시
 
+## json-render 검토 후 추가 작업
+
+- [ ] J0. `GameUiState` 타입과 EventBus → UI 상태 순수 변환 함수 설계
+- [ ] J1. 플레이어·CPU 턴, 점수, choice/go-stop/result 모달 상태 변환 테스트
+- [ ] J2. `StatusBanner`, `ScorePanel`, `ChoiceModal`, `GoStopModal`, `ResultModal` UI 블록 계약 정의
+- [ ] J3. 디버그·리플레이·스크린샷 테스트에 선언적 UI 구조를 제한적으로 적용
+- [ ] J4. json-render 패키지 설치 여부를 J0~J3 결과와 실제 요구사항으로 재평가
+
+제약: 게임 전체 화면·Three.js 카드 렌더링·게임 규칙은 json-render로 대체하지 않는다. 새 UI 라이브러리와 AI 서버는 J0~J3의 필요성이 확인되기 전까지 추가하지 않는다.
+
 ## 자동 진행 작업 카드
 
 ### Worker A — 저비용 구현 검토

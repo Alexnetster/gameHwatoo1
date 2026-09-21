@@ -97,6 +97,15 @@
 
 실제 Supabase 연결과 서로 다른 네트워크의 2대 E2E는 adapter 경계와 테스트가 안정된 뒤 진행한다.
 
+### P1 — UI 상태 경계 및 json-render 검토 반영
+
+- `docs/research/json-render-ui.md`의 결론에 따라 json-render 패키지는 당장 설치하지 않는다.
+- `Game`·`EventBus`·Three.js 카드 렌더링 경계를 유지한다.
+- `GameUiState` 표시 모델과 UI 블록 계약을 먼저 설계한다.
+- 이벤트 → UI 상태 변환을 순수 함수로 만들고 플레이어·CPU·모달 상태 테스트를 추가한다.
+- 이후 디버그 패널·리플레이·스크린샷 테스트에만 선언적 JSON 구조를 제한적으로 검토한다.
+- UI 경계 작업은 48장 invariant와 browser smoke를 통과한 뒤 다음 단계로 진행한다.
+
 ## 5. 사용자 확인이 필요한 항목
 
 아래 항목은 임의로 확정하지 않고 계속 보류한다.
