@@ -64,6 +64,15 @@ export class CardAnimator {
     });
   }
 
+  public cancel(mesh: CardMesh): void {
+    for (let index = this.activeTweens.length - 1; index >= 0; index--) {
+      const tween = this.activeTweens[index];
+      if (tween.mesh !== mesh) continue;
+      this.activeTweens.splice(index, 1);
+      tween.resolvePromise?.();
+    }
+  }
+
   private prefersReducedMotion(): boolean {
     return typeof window !== 'undefined'
       && typeof window.matchMedia === 'function'

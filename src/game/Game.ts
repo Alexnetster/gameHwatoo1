@@ -23,6 +23,7 @@ export class Game {
   private isSuspended = false;
   private disposed = false;
   private roundGeneration = 0;
+  private readonly pendingDelays = new Map<ReturnType<typeof setTimeout>, () => void>();
 
   constructor(container: HTMLElement, ruleOptions: Partial<RuleOptions> = {}, random: () => number = Math.random) {
     this.sceneManager = new SceneManager(container);
@@ -51,6 +52,7 @@ export class Game {
   public async startNewRound(): Promise<void> {
     if (this.disposed || this.isSuspended) return;
     const roundGeneration = ++this.roundGeneration;
+    this.cancelPendingDelays();
     this.clearAllCards();
     this.isProcessingTurn = true;
     this.selectedCardMesh = null;
@@ -82,7 +84,9 @@ export class Game {
       const targetPos = this.getFloorPosition(idx);
       floorPromises.push(
         this.delay(idx * 40).then(() =>
-          this.animator.moveTo(mesh, targetPos, this.getVisualTilt(card.id), true, 260)
+          this.isCurrentRound(roundGeneration)
+            ? this.animator.moveTo(mesh, targetPos, this.getVisualTilt(card.id), true, 260)
+            : undefined
         )
       );
     });
@@ -96,7 +100,9 @@ export class Game {
       const targetPos = this.getCpuHandPosition(idx, cpuHand.length);
       cpuPromises.push(
         this.delay(idx * 30).then(() =>
-          this.animator.moveTo(mesh, targetPos, 0, false, 240)
+          this.isCurrentRound(roundGeneration)
+            ? this.animator.moveTo(mesh, targetPos, 0, false, 240)
+            : undefined
         )
       );
     });
@@ -110,7 +116,9 @@ export class Game {
       const targetPos = this.getPlayerHandPosition(idx, playerHand.length);
       playerPromises.push(
         this.delay(idx * 30).then(() =>
-          this.animator.moveTo(mesh, targetPos, 0, true, 240)
+          this.isCurrentRound(roundGeneration)
+            ? this.animator.moveTo(mesh, targetPos, 0, true, 240)
+            : undefined
         )
       );
     });
@@ -250,8 +258,9 @@ export class Game {
     // the 48-card invariant valid until the drawn card is itself resolved.
     const deckCard = this.gameState.peekDeckCard();
     if (!deckCard) {
-      await this.applyMatchResult(playerId, handMatch);
-      await this.finishTurn();
+      await this.applyMatchResult(playerId, handMatch, generation);
+      if (!this.isCurrentRound(generation)) return;
+      await this.finishTurn(generation);
       return;
     }
 
@@ -266,20 +275,23 @@ export class Game {
     this.eventBus.emit('DECK_FLIPPED', { playerId, card: deckCard });
     // Keep the revealed card visible long enough for the player to read it.
     await this.delay(650);
+    if (!this.isCurrentRound(generation)) return;
 
     // Resolve 따닥 before applying the deferred hand result. This captures
     // hand + both matching floor cards + deck card as one atomic result.
     const dadakMatch = evaluateDadakMatch(handMatch.playedCard, this.gameState.floorCards, deckCard);
     if (dadakMatch) {
       this.gameState.drawCardFromDeck();
-      await this.applyMatchResult(playerId, dadakMatch);
+      await this.applyMatchResult(playerId, dadakMatch, generation);
+      if (!this.isCurrentRound(generation)) return;
       await this.finishTurn(generation);
       return;
     }
 
     if (isSeolsa(handMatch, deckCard, this.gameState.specialRuleOptions)) {
       this.gameState.drawCardFromDeck();
-      await this.applySeolsa(playerId, handMatch.playedCard, deckCard);
+      await this.applySeolsa(playerId, handMatch.playedCard, deckCard, generation);
+      if (!this.isCurrentRound(generation)) return;
       await this.finishTurn(generation);
       return;
     }
@@ -288,12 +300,14 @@ export class Game {
     const jjokMatch = evaluateJjokMatch(handMatch.playedCard, this.gameState.floorCards, deckCard);
     if (jjokMatch) {
       this.gameState.drawCardFromDeck();
-      await this.applyMatchResult(playerId, jjokMatch);
+      await this.applyMatchResult(playerId, jjokMatch, generation);
+      if (!this.isCurrentRound(generation)) return;
       await this.finishTurn(generation);
       return;
     }
 
-    await this.applyMatchResult(playerId, handMatch);
+    await this.applyMatchResult(playerId, handMatch, generation);
+    if (!this.isCurrentRound(generation)) return;
     this.gameState.drawCardFromDeck();
 
     let deckMatch = evaluateCardMatch(deckCard, this.gameState.floorCards, chosenCandidate);
@@ -317,12 +331,14 @@ export class Game {
       }
     }
 
-    await this.applyMatchResult(playerId, deckMatch);
+    await this.applyMatchResult(playerId, deckMatch, generation);
+    if (!this.isCurrentRound(generation)) return;
     await this.finishTurn(generation);
   }
 
   // When user makes a choice from the UI modal or floor click
   public async resolveUserChoice(chosenCandidate: CardDef): Promise<void> {
+    const generation = this.roundGeneration;
     this.eventBus.emit('CHOICE_RESOLVED');
     this.isProcessingTurn = true;
 
@@ -335,7 +351,7 @@ export class Game {
       const handMatch = evaluateCardMatch(handCard, this.gameState.floorCards, chosenCandidate);
 
       // Continue to deck draw
-      await this.executeDeckDraw('player', handMatch, undefined, this.roundGeneration);
+      await this.executeDeckDraw('player', handMatch, undefined, generation);
     } else if (this.gameState.phase === 'PLAYER_DRAW_CHOICE') {
       const deckCard = this.gameState.pendingDrawCard!;
       this.clearSelection();
@@ -343,13 +359,14 @@ export class Game {
       this.gameState.pendingChoiceCandidates = [];
 
       const deckMatch = evaluateCardMatch(deckCard, this.gameState.floorCards, chosenCandidate);
-      await this.applyMatchResult('player', deckMatch);
+      await this.applyMatchResult('player', deckMatch, generation);
 
-      await this.finishTurn(this.roundGeneration);
+      if (!this.isCurrentRound(generation)) return;
+      await this.finishTurn(generation);
     }
   }
 
-  private async applySeolsa(playerId: 'player' | 'cpu', handCard: CardDef, deckCard: CardDef): Promise<void> {
+  private async applySeolsa(playerId: 'player' | 'cpu', handCard: CardDef, deckCard: CardDef, generation: number): Promise<void> {
     this.gameState.floorCards = [...this.gameState.floorCards, handCard, deckCard];
     const opponentId = playerId === 'player' ? 'cpu' : 'player';
     const transferred = this.gameState.transferPi(
@@ -366,15 +383,23 @@ export class Game {
 
     const handMesh = this.cardMeshes.get(handCard.id);
     const deckMesh = this.cardMeshes.get(deckCard.id);
-    if (handMesh) await this.animator.moveTo(handMesh, this.getFloorPosition(this.gameState.floorCards.length - 2), 0, true, 220);
-    if (deckMesh) await this.animator.moveTo(deckMesh, this.getFloorPosition(this.gameState.floorCards.length - 1), 0, true, 220);
+    if (handMesh) {
+      await this.animator.moveTo(handMesh, this.getFloorPosition(this.gameState.floorCards.length - 2), 0, true, 220);
+      if (!this.isCurrentRound(generation)) return;
+    }
+    if (deckMesh) {
+      await this.animator.moveTo(deckMesh, this.getFloorPosition(this.gameState.floorCards.length - 1), 0, true, 220);
+      if (!this.isCurrentRound(generation)) return;
+    }
     this.repositionFloor();
   }
 
   private async applyMatchResult(
     playerId: 'player' | 'cpu',
-    match: MatchResult
+    match: MatchResult,
+    generation: number
   ): Promise<void> {
+    if (!this.isCurrentRound(generation)) return;
     validateMatchResult(match);
     this.gameState.floorCards = match.remainingOnFloor;
 
@@ -386,9 +411,11 @@ export class Game {
       const transferred = match.type === 'jjok'
         ? this.gameState.transferPi(opponentId, playerId, this.gameState.specialRuleOptions.jjokPiReward)
         : [];
-      await this.repositionCaptured(playerId);
+      await this.repositionCaptured(playerId, generation);
+      if (!this.isCurrentRound(generation)) return;
       if (transferred.length > 0) {
-        await this.repositionCaptured(opponentId);
+        await this.repositionCaptured(opponentId, generation);
+        if (!this.isCurrentRound(generation)) return;
         this.eventBus.emit('CAPTURE_UPDATED', {
           playerId: opponentId,
           total: this.gameState[opponentId].captured,
@@ -409,6 +436,7 @@ export class Game {
         const reward = transferred.length > 0 ? ` 피 ${transferred.length}장 회수!` : '';
         this.eventBus.emit('STATUS_MESSAGE', `${playerName} 쪽! 손패와 더미패를 함께 가져옵니다.${reward}`);
         await this.delay(650);
+        if (!this.isCurrentRound(generation)) return;
       }
     } else {
       // No match: played card is left on the floor
@@ -416,6 +444,7 @@ export class Game {
       const floorIdx = this.gameState.floorCards.findIndex((c) => c.id === match.playedCard.id);
       const targetPos = this.getFloorPosition(floorIdx !== -1 ? floorIdx : this.gameState.floorCards.length - 1);
       await this.animator.moveTo(mesh, targetPos, (Math.random() - 0.5) * 0.15, true, 220);
+      if (!this.isCurrentRound(generation)) return;
     }
 
     // Rearrange floor cards neatly
@@ -423,13 +452,14 @@ export class Game {
     this.gameState.validateInvariants();
   }
 
-  private async repositionCaptured(playerId: 'player' | 'cpu'): Promise<void> {
+  private async repositionCaptured(playerId: 'player' | 'cpu', generation: number): Promise<void> {
     const captured = this.gameState[playerId].captured;
     await Promise.all(captured.map((card) => {
       const mesh = this.cardMeshes.get(card.id)!;
       mesh.setDisplayScale(0.55);
       return this.animator.moveTo(mesh, this.getCapturedPosition(playerId, card, 0), 0, true, 260);
     }));
+    if (!this.isCurrentRound(generation)) return;
   }
 
   private async finishTurn(generation = this.roundGeneration): Promise<void> {
@@ -676,6 +706,7 @@ export class Game {
 
   private clearAllCards(): void {
     this.cardMeshes.forEach((mesh) => {
+      this.animator.cancel(mesh);
       this.sceneManager.cardContainer.remove(mesh);
       mesh.dispose();
     });
@@ -695,6 +726,8 @@ export class Game {
   public dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.roundGeneration++;
+    this.cancelPendingDelays();
     this.isSuspended = true;
     this.interactionManager.enabled = false;
     this.clearAllCards();
@@ -703,6 +736,20 @@ export class Game {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.pendingDelays.delete(timer);
+        resolve();
+      }, ms);
+      this.pendingDelays.set(timer, resolve);
+    });
+  }
+
+  private cancelPendingDelays(): void {
+    this.pendingDelays.forEach((resolve, timer) => {
+      clearTimeout(timer);
+      resolve();
+    });
+    this.pendingDelays.clear();
   }
 }
